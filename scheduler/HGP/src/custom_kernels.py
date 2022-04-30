@@ -16,6 +16,7 @@ from sklearn.gaussian_process.kernels \
 
 EPSILON = 1e-10
 
+
 class HeteroscedasticKernel(Kernel):
     """Kernel which learns a heteroscedastic noise model.
 
@@ -41,6 +42,7 @@ class HeteroscedasticKernel(Kernel):
     gamma_bounds : pair of floats >= 0, default: (1e-2, 1e2)
         The lower and upper bound on gamma
     """
+
     def __init__(self, prototypes, sigma_2=1.0, sigma_2_bounds=(0.1, 10.0),
                  gamma=1.0, gamma_bounds=(1e-2, 1e2)):
         assert prototypes.shape[0] == sigma_2.shape[0]
@@ -53,11 +55,11 @@ class HeteroscedasticKernel(Kernel):
         self.gamma_bounds = gamma_bounds
 
         self.hyperparameter_sigma_2 = \
-                Hyperparameter("sigma_2", "numeric", self.sigma_2_bounds,
-                               self.sigma_2.shape[0])
+            Hyperparameter("sigma_2", "numeric", self.sigma_2_bounds,
+                           self.sigma_2.shape[0])
 
         self.hyperparameter_gamma = \
-                Hyperparameter("gamma", "numeric", self.gamma_bounds)
+            Hyperparameter("gamma", "numeric", self.gamma_bounds)
 
     @classmethod
     def construct(cls, prototypes, sigma_2=1.0, sigma_2_bounds=(0.1, 10.0),
@@ -65,7 +67,7 @@ class HeteroscedasticKernel(Kernel):
         prototypes = np.asarray(prototypes)
         if prototypes.shape[0] > 1 and len(np.atleast_1d(sigma_2)) == 1:
             sigma_2 = np.repeat(sigma_2, prototypes.shape[0])
-            sigma_2_bounds = np.vstack([sigma_2_bounds] *prototypes.shape[0])
+            sigma_2_bounds = np.vstack([sigma_2_bounds] * prototypes.shape[0])
         return cls(prototypes, sigma_2, sigma_2_bounds, gamma, gamma_bounds)
 
     def __call__(self, X, Y=None, eval_gradient=False):
@@ -104,7 +106,7 @@ class HeteroscedasticKernel(Kernel):
             raise ValueError("Gradient can only be evaluated when Y is None.")
 
         if Y is None:
-            K= np.eye(X.shape[0]) * self.diag(X)
+            K = np.eye(X.shape[0]) * self.diag(X)
             if eval_gradient:
                 K_gradient = \
                     np.zeros((K.shape[0], K.shape[0], n_gradient_dim))
@@ -123,6 +125,7 @@ class HeteroscedasticKernel(Kernel):
                         theta = self.theta.copy()
                         theta[-1] = gamma[0]
                         return self.clone_with_theta(theta)(X, Y)
+
                     K_gradient[:, :, -1] = \
                         _approx_fprime([self.theta[-1]], f, 1e-5)[:, :, 0]
                 return K, K_gradient
@@ -130,7 +133,7 @@ class HeteroscedasticKernel(Kernel):
                 return K
         else:
             K = np.zeros((X.shape[0], Y.shape[0]))
-            return K   # XXX: similar entries?
+            return K  # XXX: similar entries?
 
     def is_stationary(self):
         """Returns whether the kernel is stationary. """
@@ -163,8 +166,8 @@ class HeteroscedasticKernel(Kernel):
                              metric="rbf", gamma=self.gamma)
 
         return (K_pairwise * self.sigma_2[:, None]).sum(axis=0) \
-                / (K_pairwise.sum(axis=0) + EPSILON)
+               / (K_pairwise.sum(axis=0) + EPSILON)
 
     def __repr__(self):
         return "{0}(sigma_2=[{1}], gamma={2})".format(self.__class__.__name__,
-            ", ".join(map("{0:.3g}".format, self.sigma_2)), self.gamma)
+                                                      ", ".join(map("{0:.3g}".format, self.sigma_2)), self.gamma)

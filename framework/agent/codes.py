@@ -17,16 +17,15 @@ HTTP_NOT_FOUND = 404
 HTTP_CONFLICT = 409
 HTTP_INTERNAL_ERR = 500
 
+
 def herror(rc):
-    
     if rc in (SUCCESS, IGNORE_MSG, DUP_REQUEST):
-        return HTTP_SUCCESS 
+        return HTTP_SUCCESS
     if rc == NOT_FOUND:
         return HTTP_NOT_FOUND
     if rc == NO_MSG_READY:
-        return  HTTP_NO_CONTENT
-    if rc  == BAD_REQ:
+        return HTTP_NO_CONTENT
+    if rc == BAD_REQ:
         return HTTP_BAD_REQUEST
-         
+
     return HTTP_INTERNAL_ERR
-    

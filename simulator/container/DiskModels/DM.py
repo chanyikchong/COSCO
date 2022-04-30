@@ -1,7 +1,6 @@
+class DM:
+    def __init__(self):
+        self.container = None
 
-class DM():
-	def __init__(self):
-		self.container = None
-
-	def allocContainer(self, container):
-		self.container = container
+    def allocContainer(self, container):
+        self.container = container

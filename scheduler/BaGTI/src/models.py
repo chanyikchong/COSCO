@@ -5,6 +5,7 @@ from .npn import *
 
 from sys import argv
 
+
 class energy_50(nn.Module):
     def __init__(self):
         super(energy_50, self).__init__()
@@ -14,7 +15,7 @@ class energy_50(nn.Module):
             nn.Softplus(),
             nn.Linear(128, 128),
             nn.Softplus(),
-            nn.Linear(128, 64), 
+            nn.Linear(128, 64),
             nn.Tanhshrink(),
             nn.Linear(64, 1),
             nn.Sigmoid())
@@ -23,6 +24,7 @@ class energy_50(nn.Module):
         x = x.flatten()
         x = self.find(x)
         return x
+
 
 class energy_latency_50(nn.Module):
     def __init__(self):
@@ -33,7 +35,7 @@ class energy_latency_50(nn.Module):
             nn.Softplus(),
             nn.Linear(128, 128),
             nn.Softplus(),
-            nn.Linear(128, 64), 
+            nn.Linear(128, 64),
             nn.Tanhshrink(),
             nn.Linear(64, 2),
             nn.Sigmoid())
@@ -41,9 +43,10 @@ class energy_latency_50(nn.Module):
     def forward(self, x):
         x = x.flatten()
         x = self.find(x)
-        if not('train' in argv[0] and 'train' in argv[2]):
-            x = Coeff_Energy*x[0] + Coeff_Latency*x[1]
+        if not ('train' in argv[0] and 'train' in argv[2]):
+            x = Coeff_Energy * x[0] + Coeff_Latency * x[1]
         return x
+
 
 class energy_latency_10(nn.Module):
     def __init__(self):
@@ -54,7 +57,7 @@ class energy_latency_10(nn.Module):
             nn.Softplus(),
             nn.Linear(128, 128),
             nn.Softplus(),
-            nn.Linear(128, 64), 
+            nn.Linear(128, 64),
             nn.Tanhshrink(),
             nn.Linear(64, 2),
             nn.Sigmoid())
@@ -62,9 +65,10 @@ class energy_latency_10(nn.Module):
     def forward(self, x):
         x = x.flatten()
         x = self.find(x)
-        if not('train' in argv[0] and 'train' in argv[2]):
-            x = Coeff_Energy*x[0] + Coeff_Latency*x[1]
+        if not ('train' in argv[0] and 'train' in argv[2]):
+            x = Coeff_Energy * x[0] + Coeff_Latency * x[1]
         return x
+
 
 class energy_latency2_10(nn.Module):
     def __init__(self):
@@ -75,7 +79,7 @@ class energy_latency2_10(nn.Module):
             nn.Softplus(),
             nn.Linear(128, 128),
             nn.Softplus(),
-            nn.Linear(128, 64), 
+            nn.Linear(128, 64),
             nn.Tanhshrink(),
             nn.Linear(64, 2),
             nn.Sigmoid())
@@ -83,9 +87,10 @@ class energy_latency2_10(nn.Module):
     def forward(self, x):
         x = x.flatten()
         x = self.find(x)
-        if not('train' in argv[0] and 'train' in argv[2]):
-            x = Coeff_Energy*x[0] + Coeff_Latency*x[1]
+        if not ('train' in argv[0] and 'train' in argv[2]):
+            x = Coeff_Energy * x[0] + Coeff_Latency * x[1]
         return x
+
 
 class energy_latency2_50(nn.Module):
     def __init__(self):
@@ -96,7 +101,7 @@ class energy_latency2_50(nn.Module):
             nn.Softplus(),
             nn.Linear(128, 128),
             nn.Softplus(),
-            nn.Linear(128, 64), 
+            nn.Linear(128, 64),
             nn.Tanhshrink(),
             nn.Linear(64, 2),
             nn.Sigmoid())
@@ -104,9 +109,10 @@ class energy_latency2_50(nn.Module):
     def forward(self, x):
         x = x.flatten()
         x = self.find(x)
-        if not('train' in argv[0] and 'train' in argv[2]):
-            x = Coeff_Energy*x[0] + Coeff_Latency*x[1]
+        if not ('train' in argv[0] and 'train' in argv[2]):
+            x = Coeff_Energy * x[0] + Coeff_Latency * x[1]
         return x
+
 
 class stochastic_energy_latency_50(nn.Module):
     def __init__(self):
@@ -117,7 +123,7 @@ class stochastic_energy_latency_50(nn.Module):
             NPNRelu(),
             NPNLinear(128, 128),
             NPNRelu(),
-            NPNLinear(128, 64), 
+            NPNLinear(128, 64),
             NPNRelu(),
             NPNLinear(64, 1),
             NPNSigmoid())
@@ -125,9 +131,10 @@ class stochastic_energy_latency_50(nn.Module):
     def forward(self, x):
         x = x.reshape(1, -1)
         x, s = self.find(x)
-        if not('train' in argv[0] and 'train' in argv[2]):
+        if not ('train' in argv[0] and 'train' in argv[2]):
             return x + UCB_K * s
         return x, s
+
 
 class stochastic_energy_latency2_50(nn.Module):
     def __init__(self):
@@ -138,7 +145,7 @@ class stochastic_energy_latency2_50(nn.Module):
             NPNRelu(),
             NPNLinear(128, 128),
             NPNRelu(),
-            NPNLinear(128, 64), 
+            NPNLinear(128, 64),
             NPNRelu(),
             NPNLinear(64, 1),
             NPNSigmoid())
@@ -146,9 +153,10 @@ class stochastic_energy_latency2_50(nn.Module):
     def forward(self, x):
         x = x.reshape(1, -1)
         x, s = self.find(x)
-        if not('train' in argv[0] and 'train' in argv[2]):
+        if not ('train' in argv[0] and 'train' in argv[2]):
             return x + UCB_K * s
         return x, s
+
 
 class stochastic_energy_latency_10(nn.Module):
     def __init__(self):
@@ -159,7 +167,7 @@ class stochastic_energy_latency_10(nn.Module):
             NPNRelu(),
             NPNLinear(128, 128),
             NPNRelu(),
-            NPNLinear(128, 64), 
+            NPNLinear(128, 64),
             NPNRelu(),
             NPNLinear(64, 1),
             NPNSigmoid())
@@ -167,9 +175,10 @@ class stochastic_energy_latency_10(nn.Module):
     def forward(self, x):
         x = x.reshape(1, -1)
         x, s = self.find(x)
-        if not('train' in argv[0] and 'train' in argv[2]):
+        if not ('train' in argv[0] and 'train' in argv[2]):
             return x + UCB_K * s
         return x, s
+
 
 class stochastic_energy_latency2_10(nn.Module):
     def __init__(self):
@@ -180,7 +189,7 @@ class stochastic_energy_latency2_10(nn.Module):
             NPNRelu(),
             NPNLinear(128, 128),
             NPNRelu(),
-            NPNLinear(128, 64), 
+            NPNLinear(128, 64),
             NPNRelu(),
             NPNLinear(64, 1),
             NPNSigmoid())
@@ -188,6 +197,6 @@ class stochastic_energy_latency2_10(nn.Module):
     def forward(self, x):
         x = x.reshape(1, -1)
         x, s = self.find(x)
-        if not('train' in argv[0] and 'train' in argv[2]):
+        if not ('train' in argv[0] and 'train' in argv[2]):
             return x + UCB_K * s
         return x, s

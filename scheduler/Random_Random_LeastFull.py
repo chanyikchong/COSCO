@@ -12,4 +12,3 @@ class RLScheduler(Scheduler):
 
     def placement(self, containerIDs):
         return self.MaxFullPlacement(containerIDs)
-

@@ -7,12 +7,12 @@ class MADMCRScheduler(Scheduler):
     def __init__(self):
         super().__init__()
         self.utilHistory = []
-        self.utilHistoryContainer= []
+        self.utilHistoryContainer = []
 
     def updateUtilHistoryContainer(self):
         containerUtil = [(cid.getBaseIPS() if cid else 0) for cid in self.env.containerlist]
         self.utilHistoryContainer.append(containerUtil)
-    
+
     def updateUtilHistory(self):
         hostUtils = []
         for host in self.env.hostlist:
@@ -22,7 +22,7 @@ class MADMCRScheduler(Scheduler):
     def selection(self):
         self.updateUtilHistoryContainer()
         selectedHostIDs = self.ThresholdHostSelection()
-        selectedVMIDs = self.MaxCorContainerSelection(selectedHostIDs,self.utilHistoryContainer)
+        selectedVMIDs = self.MaxCorContainerSelection(selectedHostIDs, self.utilHistoryContainer)
         return selectedVMIDs
 
     def placement(self, containerIDs):

@@ -1,8 +1,8 @@
-#*
+# *
 # Copyright (c) Zhewei Yao, Amir Gholami, Sheng Shen
 # All rights reserved.
 # This file is part of AdaHessian library.
-#*
+# *
 
 import math
 import torch
@@ -43,7 +43,7 @@ class Adahessian(Optimizer):
             raise ValueError("Invalid Hessian power value: {}".format(hessian_power))
         defaults = dict(lr=lr, betas=betas, eps=eps,
                         weight_decay=weight_decay, hessian_power=hessian_power)
-        self.single_gpu = single_gpu 
+        self.single_gpu = single_gpu
         super(Adahessian, self).__init__(params, defaults)
 
     def get_trace(self, params, grads):
@@ -58,8 +58,8 @@ class Adahessian(Optimizer):
         for i, grad in enumerate(grads):
             if grad.grad_fn is None:
                 raise RuntimeError('Gradient tensor {:} does not have grad_fn. When calling\n'.format(i) +
-                           '\t\t\t  loss.backward(), make sure the option create_graph is\n' +
-                           '\t\t\t  set to True.')
+                                   '\t\t\t  loss.backward(), make sure the option create_graph is\n' +
+                                   '\t\t\t  set to True.')
 
         v = [2 * torch.randint_like(p, high=2) - 1 for p in params]
 
@@ -99,7 +99,7 @@ class Adahessian(Optimizer):
         if not self.single_gpu:
             for output1 in hutchinson_trace:
                 dist.all_reduce(output1 / torch.cuda.device_count())
-        
+
         return hutchinson_trace
 
     def step(self, closure=None):
@@ -159,12 +159,12 @@ class Adahessian(Optimizer):
             # make the square root, and the Hessian power
             k = group['hessian_power']
             denom = (
-                (exp_hessian_diag_sq.sqrt() ** k) /
-                math.sqrt(bias_correction2) ** k).add_(
+                    (exp_hessian_diag_sq.sqrt() ** k) /
+                    math.sqrt(bias_correction2) ** k).add_(
                 group['eps'])
 
             # make update
             p.data = p.data - \
-                group['lr'] * (exp_avg / bias_correction1 / denom + group['weight_decay'] * p.data)
+                     group['lr'] * (exp_avg / bias_correction1 / denom + group['weight_decay'] * p.data)
 
         return loss
