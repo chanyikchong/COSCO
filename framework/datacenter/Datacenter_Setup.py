@@ -56,9 +56,11 @@ def setupVLANEnvironment(cfg, mode):
     uname = "ansible"
     for ip in HOST_IPS:
         res = os.system(
-            "ssh -o StrictHostKeyChecking=no -i framework/install_scripts/ssh_keys/id_rsa " + uname + "@" + ip + " /home/ansible/agent/scripts/delete.sh > /dev/null 2>&1")
+            "ssh -o StrictHostKeyChecking=no -i framework/install_scripts/ssh_keys/id_rsa " + uname + "@" + ip + " /home/ansible/agent/scripts/delete.sh > /dev/null 2>&1"
+        )
         res = os.system(
-            "ssh -o StrictHostKeyChecking=no -i framework/install_scripts/ssh_keys/id_rsa " + uname + "@" + ip + " sudo service docker restart > /dev/null 2>&1")
+            "ssh -o StrictHostKeyChecking=no -i framework/install_scripts/ssh_keys/id_rsa " + uname + "@" + ip + " sudo service docker restart > /dev/null 2>&1"
+        )
     return HOST_IPS
 
 

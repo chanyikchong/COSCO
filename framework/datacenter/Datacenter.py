@@ -32,6 +32,7 @@ class Datacenter:
 
     def parallelizedFunc(self, IP):
         payload = {"opcode": "hostDetails" + self.env_type}
+        # todo how to get the information
         resp = requests.get("http://" + IP + ":8081/request", data=json.dumps(payload))
         data = json.loads(resp.text)
         return data
@@ -46,6 +47,7 @@ class Datacenter:
             with open('framework/server/scripts/instructions_arch.json') as f:
                 arch_dict = json.load(f)
             instructions = arch_dict[platform.machine()]
+        # get information of the host
         outputHostsData = Parallel(n_jobs=num_cores)(delayed(self.parallelizedFunc)(i) for i in self.hosts)
         for i, data in enumerate(outputHostsData):
             IP = self.hosts[i]

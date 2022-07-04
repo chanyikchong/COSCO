@@ -104,7 +104,8 @@ def initalizeEnvironment(environment, logger):
 
     # Initialize scheduler
     ''' Can be LRMMTR, RF, RL, RM, Random, RLRMMTR, TMCR, TMMR, TMMTR, GA, GOBI (arg = 'energy_latency_'+str(HOSTS)) '''
-    scheduler = GOBIScheduler('energy_latency_' + str(HOSTS))  # GOBIScheduler('energy_latency_'+str(HOSTS))
+    # scheduler = GOBIScheduler('energy_latency_' + str(HOSTS))  # GOBIScheduler('energy_latency_'+str(HOSTS))
+    scheduler = RFScheduler()
 
     # Initialize Environment
     hostlist = datacenter.generateHosts()
@@ -230,6 +231,8 @@ if __name__ == '__main__':
             print("Setting up VLAN environment using Ansible")
             HOSTS_IP = setupVLANEnvironment(configFile, mode)
             print(HOSTS_IP)
+        else:
+            HOSTS_IP = [s['ip'] for s in cfg[env.lower()]['servers']]
     # exit()
 
     datacenter, workload, scheduler, env, stats = initalizeEnvironment(env, logger)

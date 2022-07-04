@@ -27,7 +27,8 @@ class GOBIScheduler(Scheduler):
         prev_alloc = {}
         for c in self.env.containerlist:
             oneHot = [0] * len(self.env.hostlist)
-            if c: prev_alloc[c.id] = c.getHostID()
+            if c:
+                prev_alloc[c.id] = c.getHostID()
             if c and c.getHostID() != -1:
                 oneHot[c.getHostID()] = 1
             else:
@@ -40,7 +41,8 @@ class GOBIScheduler(Scheduler):
         for cid in prev_alloc:
             one_hot = result[cid, -self.hosts:].tolist()
             new_host = one_hot.index(max(one_hot))
-            if prev_alloc[cid] != new_host: decision.append((cid, new_host))
+            if prev_alloc[cid] != new_host:
+                decision.append((cid, new_host))
         return decision
 
     def selection(self):

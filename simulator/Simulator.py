@@ -82,7 +82,8 @@ class Simulator:
     def getCreationIDs(self, migrations, containerIDs):
         creationIDs = []
         for decision in migrations:
-            if decision[0] in containerIDs: creationIDs.append(self.containerlist[decision[0]].creationID)
+            if decision[0] in containerIDs:
+                creationIDs.append(self.containerlist[decision[0]].creationID)
         return creationIDs
 
     def getPlacementPossible(self, containerID, hostID):
