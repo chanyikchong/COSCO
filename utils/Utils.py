@@ -1,19 +1,22 @@
 import os
-import logging
-import json
-import re
-from subprocess import call
-from .ColorUtils import *
+from .ColorUtils import color
+
+
+def generate_decision_migration_string(decisions, migrations):
+    sub_string_list = list()
+    for i, d in enumerate(decisions):
+        if d not in migrations:
+            sub_string = "%s%s%s" % (color.FAIL, str(d), color.ENDC)
+        else:
+            sub_string = str(d)
+        sub_string_list.append(sub_string)
+    sub_string = ', '.join(sub_string_list)
+    return 'Decision: [%s]' % sub_string
 
 
 def printDecisionAndMigrations(decision, migrations):
-    print('Decision: [', end='')
-    for i, d in enumerate(decision):
-        if d not in migrations: print(color.FAIL, end='')
-        print(d, end='')
-        if d not in migrations: print(color.ENDC, end='')
-        print(',', end='') if i != len(decision) - 1 else print(']')
-    print()
+    string = generate_decision_migration_string(decision, migrations)
+    print(string)
 
 
 def unixify(paths):

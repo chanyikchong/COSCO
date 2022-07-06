@@ -1,4 +1,4 @@
-import os, sys, stat
+import os, stat
 import sys
 import optparse
 import logging as logger
@@ -240,7 +240,8 @@ if __name__ == '__main__':
     for step in range(NUM_SIM_STEPS):
         print(color.BOLD + "Simulation Interval:", step, color.ENDC)
         stepSimulation(workload, scheduler, env, stats)
-        if env != '' and step % 10 == 0: saveStats(stats, datacenter, workload, env, end=False)
+        if env != '' and step % 10 == 0:
+            saveStats(stats, datacenter, workload, env, end=False)
 
     if opts.env != '':
         # Destroy environment if required

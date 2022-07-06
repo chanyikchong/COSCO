@@ -177,7 +177,7 @@ class Stats:
         title = obj + '_' + metric + '_with_interval'
         totalIntervals = len(listinfo)
         x = list(range(totalIntervals))
-        metric_with_interval = [];
+        metric_with_interval = []
         metric2_with_interval = []
         ylimit = 0;
         ylimit2 = 0
