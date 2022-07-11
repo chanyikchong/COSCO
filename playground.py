@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 
 import torch
 import pandas as pd
+from memory_profiler import profile
 
 from simulator.environment.AzureFog import AzureFog
 from simulator.workload.BitbrainWorkload2 import BWGD2
@@ -18,7 +19,7 @@ from utils.Utils import generate_decision_migration_string
 from utils.ColorUtils import color
 
 # from scheduler.IQR_MMT_Random import IQRMMTRScheduler
-# from scheduler.MAD_MMT_Random import MADMMTRScheduler
+from scheduler.MAD_MMT_Random import MADMMTRScheduler
 from scheduler.MAD_MC_Random import MADMCRScheduler
 from scheduler.LR_MMT_Random import LRMMTRScheduler
 # from scheduler.Random_Random_FirstFit import RFScheduler
@@ -29,6 +30,8 @@ from scheduler.LR_MMT_Random import LRMMTRScheduler
 # from scheduler.HGP_LBFGS import HGPScheduler
 # from scheduler.GA import GAScheduler
 from scheduler.GOBI import GOBIScheduler
+
+
 # from scheduler.GOBI2 import GOBI2Scheduler
 # from scheduler.DRL import DRLScheduler
 # from scheduler.DQL import DQLScheduler
@@ -159,35 +162,36 @@ def save_stats(log_file, env_setting, stats, datacenter, workload, env, end=True
         pickle.dump(stats, handle)
     return dirname
 
+def test(log_file):
+    with open('var/env_setting.pkl', 'rb') as f:
+        env_setting = pickle.load(f)
+    with open('var/stats.pkl', 'rb') as f:
+        stats = pickle.load(f)
+    with open('var/datacenter.pkl', 'rb') as f:
+        datacenter = pickle.load(f)
+    with open('var/workload.pkl', 'rb') as f:
+        workload = pickle.load(f)
+    with open('var/env.pkl', 'rb') as f:
+        env = pickle.load(f)
+    
+    start_time = time()
+    dirname = save_stats(log_file, env_setting, stats, datacenter, workload, env)
+    if os.path.exists(file_pandas):
+        f_pd = pd.read_csv(file_pandas)
+    else:
+        f_pd = pd.DataFrame(columns=list(env_setting.keys()))
+    row = pd.Series(env_setting)
+    row['dirname'] = dirname
+    f_pd = f_pd.append(row, ignore_index=True)
+    f_pd = f_pd.drop_duplicates(keep='last')
+    f_pd.to_csv(file_pandas, index=False)
 
-if __name__ == '__main__':
 
-    plt.style.use(['science'])
-    plt.rcParams["text.usetex"] = False
-    file_pandas = 'logs/file_df.csv'
-
-    log_file = 'COSCO.log'
-    log_level = 'info'
-
-    env_setting = {'num_hosts': 50,
-                   'max_container': 50,
-                   'mean_container': 5,
-                   'std_container': 1.5,
-                   'total_power': 1000,
-                   'router_bw': 10000,
-                   'interval_time': 300,
-                   'num_step': 100,
-                   'seed': 10}
-
-    scheduler_dict = {'GOBIScheduler': 'energy_latency_%s' % env_setting.get("num_hosts"),
-                      'LRMMTRScheduler': ''
-                      }
-    # scheduler_dict = {'MADMCRScheduler': ''}
-    mean_container_list = [10, 15]
-
+def main(env_setting, scheduler_dict, mean_container_list, num_seed=10, start_seed=10):
+    logger = init_logger(log_file, log_level)
     for mean_container in mean_container_list:
         env_setting['mean_container'] = mean_container
-        for seed in range(13, 20):
+        for seed in range(start_seed, start_seed + num_seed):
 
             env_setting['seed'] = seed
             random.seed(env_setting.get('seed'))
@@ -197,8 +201,6 @@ if __name__ == '__main__':
                 env_setting['scheduler'] = scheduler_key
                 scheduler = eval("%s('%s')" % (scheduler_key, scheduler_value)) if len(scheduler_value) > 0 else eval(
                     "%s()" % scheduler_key)
-
-                logger = init_logger(log_file, log_level)
 
                 datacenter, workload, scheduler, env, stats = initalize_environment(env_setting, scheduler, logger)
 
@@ -224,4 +226,33 @@ if __name__ == '__main__':
                 del stats
                 del f_pd
                 del row
-                del logger
+
+
+if __name__ == '__main__':
+    plt.style.use(['science'])
+    plt.rcParams["text.usetex"] = False
+    file_pandas = 'logs/file_df.csv'
+
+    log_file = 'COSCO.log'
+    log_level = 'info'
+
+    env_setting = {'num_hosts': 50,
+                   'max_container': 50,
+                   'mean_container': 5,
+                   'std_container': 1.5,
+                   'total_power': 1000,
+                   'router_bw': 10000,
+                   'interval_time': 300,
+                   'num_step': 100,
+                   'seed': 10}
+
+    scheduler_dict = {'GOBIScheduler': 'energy_latency_%s' % env_setting.get("num_hosts"),
+                      'LRMMTRScheduler': '',
+                      'MADMMTRScheduler': ''}
+    # scheduler_dict = {'GOBIScheduler': 'energy_latency_%s' % env_setting.get("num_hosts")}
+    # scheduler_dict = {'MADMMTRScheduler': ''}
+    # scheduler_dict = {'MADMMTRScheduler': ''}
+    mean_container_list = [6, 7, 8, 9]
+
+    main(env_setting, scheduler_dict, mean_container_list, 10, 10)
+    # test(log_file)

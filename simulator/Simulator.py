@@ -139,7 +139,8 @@ class Simulator:
     def getNumActiveContainers(self):
         num = 0
         for container in self.containerlist:
-            if container and container.active: num += 1
+            if container and container.active:
+                num += 1
         return num
 
     def getSelectableContainers(self):

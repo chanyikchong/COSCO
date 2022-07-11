@@ -13,7 +13,8 @@ class IPSMBitbrain(IPSM):
 
     def getIPS(self):
         if self.totalInstructions == 0:
-            for ips in self.ips_list[:self.duration]: self.totalInstructions += ips * self.container.env.intervaltime
+            for ips in self.ips_list[:self.duration]:
+                self.totalInstructions += ips * self.container.env.intervaltime
         if self.completedInstructions < self.totalInstructions:
             return self.ips_list[(self.container.env.interval - self.container.startAt) % len(self.ips_list)]
         return 0

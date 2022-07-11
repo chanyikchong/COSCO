@@ -59,8 +59,8 @@ class Host:
         containers = self.env.getContainersOfHost(self.id)
         for containerID in containers:
             s, r, w = self.env.getContainerByID(containerID).getRAM()
-            size += s;
-            read += r;
+            size += s
+            read += r
             write += w
         # assert size <= self.ramCap.size
         # assert read <= self.ramCap.read
@@ -76,8 +76,8 @@ class Host:
         containers = self.env.getContainersOfHost(self.id)
         for containerID in containers:
             s, r, w = self.env.getContainerByID(containerID).getDisk()
-            size += s;
-            read += r;
+            size += s
+            read += r
             write += w
         assert size <= self.diskCap.size
         assert read <= self.diskCap.read

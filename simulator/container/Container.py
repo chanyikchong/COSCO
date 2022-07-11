@@ -43,7 +43,8 @@ class Container:
         return self.diskmodel.disk()
 
     def getContainerSize(self):
-        if self.lastContainerSize == 0: self.getRAM()
+        if self.lastContainerSize == 0:
+            self.getRAM()
         return self.lastContainerSize
 
     def getHostID(self):

@@ -1,6 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+from memory_profiler import profile
+from time import time
+
 from scheduler.GOBI import GOBIScheduler
 
 plt.style.use(['science'])
@@ -126,7 +129,7 @@ class Stats:
         self.saveSchedulerInfo(selectedcontainers, decision, schedulingtime)
 
     def runSimpleSimulation(self, decision):
-        host_alloc = [];
+        host_alloc = []
         container_alloc = [-1] * len(self.env.hostlist)
         for i in range(len(self.env.hostlist)):
             host_alloc.append([])
@@ -148,7 +151,7 @@ class Stats:
             [metric_d['avgresponsetime'] for metric_d in self.metrics[-5:]]))
 
     def runSimulationGOBI(self):
-        host_alloc = [];
+        host_alloc = []
         container_alloc = [-1] * len(self.env.hostlist)
         for i in range(len(self.env.hostlist)):
             host_alloc.append([])
@@ -179,9 +182,9 @@ class Stats:
         x = list(range(totalIntervals))
         metric_with_interval = []
         metric2_with_interval = []
-        ylimit = 0;
+        ylimit = 0
         ylimit2 = 0
-        for hostID in range(len(listinfo[0][metric])):
+        for hostID in range(len(listinfo[0][metric])):  # todo change name on hostID
             metric_with_interval.append([listinfo[interval][metric][hostID] for interval in range(totalIntervals)])
             ylimit = max(ylimit, max(metric_with_interval[-1]))
             if metric2:
@@ -197,6 +200,9 @@ class Stats:
             axes[hostID].grid(b=True, which='both', color='#eeeeee', linestyle='-')
         plt.tight_layout(pad=0)
         plt.savefig(dirname + '/' + title + '.pdf')
+        plt.cla()
+        plt.clf()
+        plt.close('all')
 
     def generateMetricsWithInterval(self, dirname):
         fig, axes = plt.subplots(9, 1, sharex=True, figsize=(4, 5))
@@ -217,6 +223,9 @@ class Stats:
               res['energytotalinterval'] / res['numdestroyed'])
         plt.tight_layout(pad=0)
         plt.savefig(dirname + '/' + 'Metrics' + '.pdf')
+        plt.cla()
+        plt.clf()
+        plt.close('all')
 
     def generateWorkloadWithInterval(self, dirname):
         fig, axes = plt.subplots(5, 1, sharex=True, figsize=(4, 5))
@@ -228,6 +237,9 @@ class Stats:
             axes[i].grid(b=True, which='both', color='#eeeeee', linestyle='-')
         plt.tight_layout(pad=0)
         plt.savefig(dirname + '/' + 'Workload' + '.pdf')
+        plt.cla()
+        plt.clf()
+        plt.close('all')
 
     ########################################################################################################
 
@@ -244,17 +256,17 @@ class Stats:
         title = metric + '_' + (metric2 + '_' if metric2 else "") + (objfunc + '_' if objfunc else "") + (
             objfunc2 + '_' if objfunc2 else "") + 'with_interval'
         totalIntervals = len(self.hostinfo)
-        metric_with_interval = [];
+        metric_with_interval = []
         metric2_with_interval = []  # metric1 is of host and metric2 is of containers
-        host_alloc_with_interval = [];
+        host_alloc_with_interval = []
         objfunc2_with_interval = []
         objfunc_with_interval = []
         for interval in range(totalIntervals - 1):
             metric_with_interval.append(
                 [self.hostinfo[interval][metric][hostID] for hostID in range(len(self.hostinfo[0][metric]))])
             host_alloc_with_interval.append([self.activecontainerinfo[interval]['hostalloc'][cID] for cID in
-                                             range(len(self.activecontainerinfo[0]['hostalloc']))])
-            objfunc_with_interval.append(self.metrics[interval + 1][objfunc])
+                                             range(len(self.activecontainerinfo[0]['hostalloc']))])  # todo rewrite
+            objfunc_with_interval.append(self.metrics[interval + 1][objfunc])  # we get the destroy before simulation
             if metric2:
                 metric2_with_interval.append(self.activecontainerinfo[interval][metric2])
             if objfunc2:
@@ -266,14 +278,15 @@ class Stats:
         if objfunc2: df = pd.concat([df, pd.DataFrame(objfunc2_with_interval)], axis=1)
         df.to_csv(dirname + '/' + title + '.csv', header=False, index=False)
 
+# todo need to rewrite these two function
     def generateDatasetWithInterval2(self, dirname, metric, metric2, metric3, metric4, objfunc, objfunc2):
         title = metric + '_' + metric2 + '_' + metric3 + '_' + metric4 + '_' + objfunc + '_' + objfunc2 + '_' + 'with_interval'
         totalIntervals = len(self.hostinfo)
-        metric_with_interval = [];
+        metric_with_interval = []
         metric2_with_interval = []
-        metric3_with_interval = [];
+        metric3_with_interval = []
         metric4_with_interval = []
-        host_alloc_with_interval = [];
+        host_alloc_with_interval = []
         objfunc2_with_interval = []
         objfunc_with_interval = []
         for interval in range(totalIntervals - 1):
@@ -299,7 +312,7 @@ class Stats:
         self.generateGraphsWithInterval(dirname, self.hostinfo, 'host', 'cpu')
         self.generateGraphsWithInterval(dirname, self.hostinfo, 'host', 'numcontainers')
         self.generateGraphsWithInterval(dirname, self.hostinfo, 'host', 'power')
-        self.generateGraphsWithInterval(dirname, self.hostinfo, 'host', 'baseips', 'apparentips')
+        self.generateGraphsWithInterval(dirname, self.hostinfo, 'host', 'baseips', 'apparentips')  # test
         self.generateGraphsWithInterval(dirname, self.hostinfo, 'host', 'ipscap', 'apparentips')
         self.generateGraphsWithInterval(dirname, self.activecontainerinfo, 'container', 'ips', 'apparentips')
         self.generateGraphsWithInterval(dirname, self.activecontainerinfo, 'container', 'hostalloc')
