@@ -62,7 +62,7 @@ if 'Windows' in platform.system():
         print('InfluxDB service runs as a separate front-end window. Please minimize this window.')
         startfile(influxdb_install_path + '/influxdb-1.8.3-1/influxd.exe')
 elif 'Linux' in platform.system():
-    run_cmd_pwd('apt install influxdb', password)
+    run_cmd_pwd('apt-get install influxdb -y', password)
 
 # Installing Vagrant
 if 'Windows' in platform.system():
@@ -79,7 +79,7 @@ if 'Windows' in platform.system():
         remove(filename)
     set_disk = subprocess.run("setx VAGRANT_EXPERIMENTAL \"disks\"", shell=True, stderr=subprocess.PIPE)
 elif 'Linux' in platform.system():
-    run_cmd_pwd('apt install vagrant', password)
+    run_cmd_pwd('apt-get install vagrant -y', password)
     set_disk = subprocess.run("export VAGRANT_EXPERIMENTAL=disks", shell=True, stderr=subprocess.PIPE)
 
 # Install VirtualBox
@@ -93,7 +93,7 @@ if 'Windows' in platform.system():
         subprocess.call([getcwd() + '/' + filename], shell=True)
         remove(filename)
 elif 'Linux' in platform.system():
-    run_cmd_pwd('apt install virtualbox', password)
+    run_cmd_pwd('apt-get install virtualbox -y', password)
 
 # Copy SSH keys
 ssh_dir = 'C:' + environ['homepath'] + '\\.ssh' if 'Windows' in platform.system() else environ['HOME'] + '/.ssh'
@@ -102,8 +102,8 @@ if not path.exists(ssh_dir):
 for filename in ['id_rsa', 'id_rsa.pub']:
     copy('framework/install_scripts/ssh_keys/' + filename, ssh_dir)
 
-run_cmd_pwd("apt install ansible", password)
-run_cmd_pwd("apt install dos2unix", password)
+run_cmd_pwd("apt-get install ansible -y", password)
+run_cmd_pwd("apt-get install dos2unix -y", password)
 run_cmd_pwd("sudo chmod 400 framework/install_scripts/ssh_keys/id_rsa", password)
 
 print(color.GREEN + "All packages installed." + color.ENDC)
