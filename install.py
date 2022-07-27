@@ -29,7 +29,7 @@ password = getpass(color.BOLD + 'Please enter linux password:' + color.ENDC)
 
 
 def run_cmd_pwd(cmd, password):
-    os.system("bash -c \"echo " + password + " | sudo -S " + cmd + " &> /dev/null\"")
+    os.system("bash -c \"echo " + password + " | sudo -S " + cmd + "\"")
 
 
 def run_cmd(cmd):
