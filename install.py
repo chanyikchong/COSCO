@@ -100,6 +100,7 @@ ssh_dir = 'C:' + environ['homepath'] + '\\.ssh' if 'Windows' in platform.system(
 if not path.exists(ssh_dir):
     makedirs(ssh_dir)
 for filename in ['id_rsa', 'id_rsa.pub']:
+    system("sudo chmod 644 %s/%s" % (ssh_dir, filename))
     copy('framework/install_scripts/ssh_keys/' + filename, ssh_dir)
 
 run_cmd_pwd("apt-get install ansible -y", password)
