@@ -146,7 +146,7 @@ class Stats:
             ips = 0
             for cid in cids: ips += self.env.containerlist[cid].getApparentIPS()
             energy_total_interval_pred += self.env.hostlist[hid].getPowerFromIPS(ips)
-        return energy_total_interval_pred * self.env.intervaltime, np.max(0, np.mean(
+        return energy_total_interval_pred * self.env.intervaltime, max(0, np.mean(
             [metric_d['avg_response_time'] for metric_d in self.metrics[-5:]]))
 
     def run_simulation_GOBI(self):
@@ -169,7 +169,7 @@ class Stats:
             ips = 0
             for cid in cids: ips += self.env.containerlist[cid].getApparentIPS()
             energy_total_interval_pred += self.env.hostlist[hid].getPowerFromIPS(ips)
-        return energy_total_interval_pred * self.env.intervaltime, np.max(0, np.mean(
+        return energy_total_interval_pred * self.env.intervaltime, max(0, np.mean(
             [metric_d['avg_response_time'] for metric_d in self.metrics[-5:]]))
 
     ########################################################################################################
