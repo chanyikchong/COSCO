@@ -11,12 +11,12 @@ plt.rcParams["text.usetex"] = False
 
 
 class Stats:
-    def __init__(self, Environment, WorkloadModel, Datacenter, Scheduler):
-        self.env = Environment
+    def __init__(self, environment, workload_model, datacenter, scheduler):
+        self.env = environment
         self.env.stats = self
-        self.workload = WorkloadModel
-        self.datacenter = Datacenter
-        self.scheduler = Scheduler
+        self.workload = workload_model
+        self.datacenter = datacenter
+        self.scheduler = scheduler
         self.simulated_scheduler = GOBIScheduler('energy_latency_' + str(self.datacenter.num_hosts))
         self.simulated_scheduler.env = self.env
         self.host_info = []
