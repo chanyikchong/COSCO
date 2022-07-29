@@ -14,7 +14,7 @@ def generate_decision_migration_string(decisions, migrations):
     return 'Decision: [%s]' % sub_string
 
 
-def printDecisionAndMigrations(decision, migrations):
+def print_decision_and_migrations(decision, migrations):
     string = generate_decision_migration_string(decision, migrations)
     print(string)
 

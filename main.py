@@ -1,4 +1,5 @@
-import os, stat
+import os
+import stat
 import sys
 import optparse
 import logging as logger
@@ -77,13 +78,14 @@ DB_NAME = ''
 DB_HOST = ''
 DB_PORT = 0
 HOSTS_IP = []
-logFile = 'COSCO.log'
+log_file = 'COSCO.log'
 
 if len(sys.argv) > 1:
-    with open(logFile, 'w'): os.utime(logFile, None)
+    with open(log_file, 'w'):
+        os.utime(log_file, None)
 
 
-def initalizeEnvironment(environment, logger):
+def initalize_environment(environment, logger):
     if environment != '':
         # Initialize the db
         db = Database(DB_NAME, DB_HOST, DB_PORT)
@@ -104,8 +106,8 @@ def initalizeEnvironment(environment, logger):
 
     # Initialize scheduler
     ''' Can be LRMMTR, RF, RL, RM, Random, RLRMMTR, TMCR, TMMR, TMMTR, GA, GOBI (arg = 'energy_latency_'+str(HOSTS)) '''
-    # scheduler = GOBIScheduler('energy_latency_' + str(HOSTS))  # GOBIScheduler('energy_latency_'+str(HOSTS))
-    scheduler = RFScheduler()
+    scheduler = GOBIScheduler('energy_latency_' + str(HOSTS))  # GOBIScheduler('energy_latency_'+str(HOSTS))
+    # scheduler = RFScheduler()
 
     # Initialize Environment
     hostlist = datacenter.generateHosts()
@@ -118,48 +120,49 @@ def initalizeEnvironment(environment, logger):
     stats = Stats(env, workload, datacenter, scheduler)
 
     # Execute first step
-    newcontainerinfos = workload.generateNewContainers(env.interval)  # New containers info
-    deployed = env.addContainersInit(newcontainerinfos)  # Deploy new containers and get container IDs
+    new_container_infos = workload.generateNewContainers(env.interval)  # New containers info
+    deployed = env.addContainersInit(new_container_infos)  # Deploy new containers and get container IDs
     start = time()
     decision = scheduler.placement(deployed)  # Decide placement using container ids
-    schedulingTime = time() - start
+    scheduling_time = time() - start
     migrations = env.allocateInit(decision)  # Schedule containers
     workload.updateDeployedContainers(
         env.getCreationIDs(migrations, deployed))  # Update workload allocated using creation IDs
     print("Deployed containers' creation IDs:", env.getCreationIDs(migrations, deployed))
     print("Containers in host:", env.getContainersInHosts())
     print("Schedule:", env.getActiveContainerList())
-    printDecisionAndMigrations(decision, migrations)
+    print_decision_and_migrations(decision, migrations)
 
-    stats.saveStats(deployed, migrations, [], deployed, decision, schedulingTime)
+    stats.save_stats(deployed, migrations, [], deployed, decision, scheduling_time)
     return datacenter, workload, scheduler, env, stats
 
 
-def stepSimulation(workload, scheduler, env, stats):
-    newcontainerinfos = workload.generateNewContainers(env.interval)  # New containers info
-    if opts.env != '': print(newcontainerinfos)
-    deployed, destroyed = env.addContainers(newcontainerinfos)  # Deploy new containers and get container IDs
+def step_simulation(workload, scheduler, env, stats):
+    new_container_infos = workload.generateNewContainers(env.interval)  # New containers info
+    if opts.env != '':
+        print(new_container_infos)
+    deployed, destroyed = env.addContainers(new_container_infos)  # Deploy new containers and get container IDs
     start = time()
     selected = scheduler.selection()  # Select container IDs for migration
     decision = scheduler.filter_placement(
         scheduler.placement(selected + deployed))  # Decide placement for selected container ids
-    schedulingTime = time() - start
+    scheduling_time = time() - start
     migrations = env.simulationStep(decision)  # Schedule containers
     workload.updateDeployedContainers(
         env.getCreationIDs(migrations, deployed))  # Update workload deployed using creation IDs
     print("Deployed containers' creation IDs:", env.getCreationIDs(migrations, deployed))
-    print("Deployed:", len(env.getCreationIDs(migrations, deployed)), "of", len(newcontainerinfos),
-          [i[0] for i in newcontainerinfos])
+    print("Deployed:", len(env.getCreationIDs(migrations, deployed)), "of", len(new_container_infos),
+          [i[0] for i in new_container_infos])
     print("Destroyed:", len(destroyed), "of", env.getNumActiveContainers())
     print("Containers in host:", env.getContainersInHosts())
     print("Num active containers:", env.getNumActiveContainers())
     print("Host allocation:", [(c.getHostID() if c else -1) for c in env.containerlist])
-    printDecisionAndMigrations(decision, migrations)
+    print_decision_and_migrations(decision, migrations)
 
-    stats.saveStats(deployed, migrations, destroyed, selected, decision, schedulingTime)
+    stats.save_stats(deployed, migrations, destroyed, selected, decision, scheduling_time)
 
 
-def saveStats(stats, datacenter, workload, env, end=True):
+def save_stats(stats, datacenter, workload, env, end=True):
     dirname = "logs/" + datacenter.__class__.__name__
     dirname += "_" + workload.__class__.__name__
     dirname += "_" + str(NUM_SIM_STEPS)
@@ -169,26 +172,29 @@ def saveStats(stats, datacenter, workload, env, end=True):
     dirname += "_" + str(ROUTER_BW)
     dirname += "_" + str(INTERVAL_TIME)
     dirname += "_" + str(NEW_CONTAINERS)
-    if not os.path.exists("logs"): os.mkdir("logs")
-    if os.path.exists(dirname): shutil.rmtree(dirname, ignore_errors=True)
+    if not os.path.exists("logs"):
+        os.mkdir("logs")
+    if os.path.exists(dirname):
+        shutil.rmtree(dirname, ignore_errors=True)
     os.mkdir(dirname)
-    stats.generateDatasets(dirname)
+    stats.generate_datasets(dirname)
     if 'Datacenter' in datacenter.__class__.__name__:
         saved_env, saved_workload, saved_datacenter, saved_scheduler, saved_sim_scheduler = stats.env, stats.workload, stats.datacenter, stats.scheduler, stats.simulated_scheduler
         stats.env, stats.workload, stats.datacenter, stats.scheduler, stats.simulated_scheduler = None, None, None, None, None
         with open(dirname + '/' + dirname.split('/')[1] + '.pk', 'wb') as handle:
             pickle.dump(stats, handle)
         stats.env, stats.workload, stats.datacenter, stats.scheduler, stats.simulated_scheduler = saved_env, saved_workload, saved_datacenter, saved_scheduler, saved_sim_scheduler
-    if not end: return
-    stats.generateGraphs(dirname)
-    stats.generateCompleteDatasets(dirname)
+    if not end:
+        return
+    stats.generate_graphs(dirname)
+    stats.generate_complete_datasets(dirname)
     stats.env, stats.workload, stats.datacenter, stats.scheduler = None, None, None, None
     if 'Datacenter' in datacenter.__class__.__name__:
         stats.simulated_scheduler = None
-        logger.getLogger().handlers.clear();
+        logger.getLogger().handlers.clear()
         env.logger.getLogger().handlers.clear()
-        if os.path.exists(dirname + '/' + logFile): os.remove(dirname + '/' + logFile)
-        rename(logFile, dirname + '/' + logFile)
+        if os.path.exists(dirname + '/' + log_file): os.remove(dirname + '/' + log_file)
+        rename(log_file, dirname + '/' + log_file)
     with open(dirname + '/' + dirname.split('/')[1] + '.pk', 'wb') as handle:
         pickle.dump(stats, handle)
 
@@ -213,10 +219,9 @@ if __name__ == '__main__':
 
         configFile = 'framework/config/' + opts.env + '_config.json'
 
-        logger.basicConfig(filename=logFile, level=logger.DEBUG,
+        logger.basicConfig(filename=log_file, level=logger.DEBUG,
                            format='%(asctime)s - %(levelname)s - %(message)s')
         logger.debug("Creating enviornment in :{}".format(env))
-        cfg = {}
         with open(configFile, "r") as f:
             cfg = json.load(f)
         DB_HOST = cfg['database']['ip']
@@ -235,13 +240,13 @@ if __name__ == '__main__':
             HOSTS_IP = [s['ip'] for s in cfg[env.lower()]['servers']]
     # exit()
 
-    datacenter, workload, scheduler, env, stats = initalizeEnvironment(env, logger)
+    datacenter, workload, scheduler, env, stats = initalize_environment(env, logger)
 
     for step in range(NUM_SIM_STEPS):
         print(color.BOLD + "Simulation Interval:", step, color.ENDC)
-        stepSimulation(workload, scheduler, env, stats)
+        step_simulation(workload, scheduler, env, stats)
         if env != '' and step % 10 == 0:
-            saveStats(stats, datacenter, workload, env, end=False)
+            save_stats(stats, datacenter, workload, env, end=False)
 
     if opts.env != '':
         # Destroy environment if required
@@ -251,4 +256,4 @@ if __name__ == '__main__':
         if 'Windows' in platform.system():
             os.system('taskkill /f /im influxd.exe')
 
-    saveStats(stats, datacenter, workload, env)
+    save_stats(stats, datacenter, workload, env)
