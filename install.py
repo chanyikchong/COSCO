@@ -1,7 +1,8 @@
-from sys import version
+import sys
 from utils.ColorUtils import *
+from packaging import version
 
-if float(version[0:3]) < 3.6:
+if version.parse(re.findall('([\d.]+).\d', sys.version)[0]) < version.parse('3.6'):
     print(color.FAIL + 'Python 3.6 or above required!' + color.ENDC)
     exit()
 
