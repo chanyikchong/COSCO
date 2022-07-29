@@ -86,8 +86,9 @@ migrations = env.allocateInit(decision)
     workload.updateDeployedContainers(env.getCreationIDs(migrations, deployed))
 ```
 更新workload里container的deploy状态
+
 ```python
-    stats.saveStats(deployed, migrations, [], deployed, decision, schedulingTime)
+    stats.save_stats(deployed, migrations, [], deployed, decision, schedulingTime)
 ```
 保存当前interval的信息
 
@@ -109,15 +110,16 @@ def stepSimulation(workload, scheduler, env, stats):
 
 ```python
     workload.updateDeployedContainers(env.getCreationIDs(migrations, deployed))
-    stats.saveStats(deployed, migrations, [], deployed, decision, schedulingTime)
+    stats.save_stats(deployed, migrations, [], deployed, decision, schedulingTime)
 ```
 更新workload里container的deploy状态，并保存当前interval的信息。
 
 ## `saveStats`
+
 ```python
 def saveStats(stats, datacenter, workload, env, end=True):
-    ... # 设置文件名，并创建文件
-    stats.generateDatasets(dirname)
+    ...  # 设置文件名，并创建文件
+    stats.generate_datasets(dirname)
 ```
 生成数据
 ```python
@@ -130,10 +132,10 @@ def saveStats(stats, datacenter, workload, env, end=True):
 ```
 
 ```python
-    if not end: 
+    if not end:
         return
-    stats.generateGraphs(dirname)
-    stats.generateCompleteDatasets(dirname)
+    stats.generate_graphs(dirname)
+    stats.generate_complete_datasets(dirname)
     stats.env, stats.workload, stats.datacenter, stats.scheduler = None, None, None, None
 ```
 结束阶段，生成图片和数据集，重置stats中的参数。后续只保存stats数据不保存stats中的对象参数。
@@ -216,46 +218,50 @@ class Stats:
 包含一个模拟的scheduler。
 
 ### `initStats`
+
 ```python
     def initStats(self):
-        self.hostinfo = []
-        self.workloadinfo = []
-        self.activecontainerinfo = []
-        self.allcontainerinfo = []
+        self.host_info = []
+        self.workload_info = []
+        self.active_container_info = []
+        self.all_container_info = []
         self.metrics = []
-        self.schedulerinfo = []
+        self.scheduler_info = []
 ```
 各个保存信息的list
 
 ### `saveStats`
+
 ```python
     def saveStats(self, deployed, migrations, destroyed, selectedcontainers, decision, schedulingtime):
-        self.saveHostInfo()
-        self.saveWorkloadInfo(deployed, migrations)
-        self.saveContainerInfo()
-        self.saveAllContainerInfo()
-        self.saveMetrics(destroyed, migrations)
-        self.saveSchedulerInfo(selectedcontainers, decision, schedulingtime)
+        self.save_host_info()
+        self.save_workload_info(deployed, migrations)
+        self.save_container_info()
+        self.save_all_container_info()
+        self.save_metrics(destroyed, migrations)
+        self.save_scheduler_info(selectedcontainers, decision, schedulingtime)
 ```
 保存各个信息的接口函数。
 
 ### `saveHostInfo`
+
 ```python
     def saveHostInfo(self):
         hostinfo = dict()
-        ... # 保存interval，cpu，每个host的container_num，power，ips，ram，disk
-        self.hostinfo.append(hostinfo)
+        ...  # 保存interval，cpu，每个host的container_num，power，ips，ram，disk
+        self.host_info.append(hostinfo)
 ```
 保存每一个host在一个interval的信息
 
 ### `saveWorkloadInfo`
+
 ```python
     def saveWorkloadInfo(self, deployed, migrations):
         workloadinfo = dict()
         workloadinfo['interval'] = self.env.interval
         workloadinfo['totalcontainers'] = len(self.workload.createdContainers)
-        if self.workloadinfo != []:
-            workloadinfo['newcontainers'] = workloadinfo['totalcontainers'] - self.workloadinfo[-1]['totalcontainers']
+        if self.workload_info != []:
+            workloadinfo['newcontainers'] = workloadinfo['totalcontainers'] - self.workload_info[-1]['totalcontainers']
         else:
             workloadinfo['newcontainers'] = workloadinfo['totalcontainers']
         workloadinfo['deployed'] = len(deployed)
@@ -265,11 +271,12 @@ class Stats:
 新增加的container通过相减获得。队列为undeploy container。
 
 ### `saveContainerInfo`
+
 ```python
     def saveContainerInfo(self):
         containerinfo = dict()
-        ... # 保存
-        self.activecontainerinfo.append(containerinfo)
+        ...  # 保存
+        self.active_container_info.append(containerinfo)
 ```
 保存active的container，从env.containerlist中获取。
 
@@ -280,15 +287,18 @@ class Stats:
         allCreatedContainers = [self.env.getContainerByCID(cid) for cid in list(np.where(self.workload.deployedContainers)[0])]
 ```
 allCreatedContainers包含active和destroy的containers，不包含undeployed的containers。
+
 ```python
         if self.datacenter.__class__.__name__ == 'Datacenter':
-            containerinfo['application'] = [self.env.getContainerByCID(cid).application for cid in list(np.where(self.workload.deployedContainers)[0])]
-        ... # 保存信息
-        self.allcontainerinfo.append(containerinfo)
+            containerinfo['application'] = [self.env.getContainerByCID(cid).application for cid in
+                                            list(np.where(self.workload.deployedContainers)[0])]
+        # 保存信息
+        self.all_container_info.append(containerinfo)
 ```
 对于Datacenter类额外保存application信息，
 
 ### `saveMetrics`
+
 ```python
     def saveMetrics(self, destroyed, migrations):
         metrics = dict()
@@ -297,52 +307,63 @@ allCreatedContainers包含active和destroy的containers，不包含undeployed的
         metrics['nummigrations'] = len(migrations)
         metrics['energy'] = [host.getPower() * self.env.intervaltime for host in self.env.hostlist]  # 每个host在当前interval的消耗
         metrics['energytotalinterval'] = np.sum(metrics['energy'])  # 总消耗
-        metrics['energypercontainerinterval'] = np.sum(metrics['energy']) / self.env.getNumActiveContainers()  # 当前interval每个active container的平均energy消耗。
-        metrics['responsetime'] = [c.totalExecTime + c.totalMigrationTime for c in destroyed]  # 当前interval destroy的container的response time。
-        metrics['avgresponsetime'] = np.average(metrics['responsetime']) if len(destroyed) > 0 else 0  # 当前interval的平均response time
+        metrics['energypercontainerinterval'] = np.sum(
+            metrics['energy']) / self.env.getNumActiveContainers()  # 当前interval每个active container的平均energy消耗。
+        metrics['responsetime'] = [c.totalExecTime + c.totalMigrationTime for c in
+                                   destroyed]  # 当前interval destroy的container的response time。
+        metrics['avgresponsetime'] = np.average(metrics['responsetime']) if len(
+            destroyed) > 0 else 0  # 当前interval的平均response time
         metrics['migrationtime'] = [c.totalMigrationTime for c in destroyed]  # 当前interval destroy的container的migration time
         metrics['avgmigrationtime'] = np.average(metrics['migrationtime']) if len(destroyed) > 0 else 0  # 平均migration time
-        metrics['slaviolations'] = len(np.where([c.destroyAt > c.sla for c in destroyed]))  SLA violation的数目
-        metrics['slaviolationspercentage'] = metrics['slaviolations'] * 100.0 / len(destroyed) if len(destroyed) > 0 else 0  # SLA violation比例
+        metrics['slaviolations'] = len(np.where([c.destroyAt > c.sla for c in destroyed]))
+        SLA
+        violation的数目
+        metrics['slaviolationspercentage'] = metrics['slaviolations'] * 100.0 / len(destroyed) if len(
+            destroyed) > 0 else 0  # SLA violation比例
         metrics['waittime'] = [c.startAt - c.createAt for c in destroyed]  # 每个destroy container的等待时间
-        metrics['energytotalinterval_pred'], metrics['avgresponsetime_pred'] = self.runSimulationGOBI()  # 用GOBI估计的interval的总energy和平均response time。
+        metrics['energytotalinterval_pred'], metrics[
+            'avgresponsetime_pred'] = self.run_simulation_GOBI()  # 用GOBI估计的interval的总energy和平均response time。
         self.metrics.append(metrics)
 ```
 计算performance信息。
 
 ### `saveSchedulerInfo`
+
 ```python
     def saveSchedulerInfo(self, selectedcontainers, decision, schedulingtime):
         schedulerinfo = dict()
         schedulerinfo['interval'] = self.env.interval
         schedulerinfo['selection'] = selectedcontainers
         schedulerinfo['decision'] = decision  # scheduler 给出的decision
-        schedulerinfo['schedule'] = [(c.id, c.getHostID()) if c else (None, None) for c in self.env.containerlist]  # 实际可执行的migration
+        schedulerinfo['schedule'] = [(c.id, c.getHostID()) if c else (None, None) for c in
+                                     self.env.containerlist]  # 实际可执行的migration
         schedulerinfo['schedulingtime'] = schedulingtime
         if self.datacenter.__class__.__name__ == 'Datacenter':
             schedulerinfo['migrationTime'] = self.env.intervalAllocTimings[-1]
-        self.schedulerinfo.append(schedulerinfo)
+        self.scheduler_info.append(schedulerinfo)
 ```
 
 ### `generateDatasetWithInterval`
+
 ```python
     def generateDatasetWithInterval(self, dirname, metric, objfunc, metric2=None, objfunc2=None):
         title = ''
-        totalInterval = 
-        metric_with_interval = []   # metric is of host
+        totalInterval =
+        metric_with_interval = []  # metric is of host
         metric2_with_interval = []  # metric2 is of containers
         host_alloc_with_interval = []
         objfunc2_with_interval = []
         objfunc_with_interval = []
         for interval in range(totalIntervals - 1):
             ...
-            objfunc_with_interval.append(self.metrics[interval + 1][objfunc])  # destroy的container是上一阶段完成的所以当前interval的performance在下一阶段
+            objfunc_with_interval.append(
+                self.metrics[interval + 1][objfunc])  # destroy的container是上一阶段完成的所以当前interval的performance在下一阶段
             if metric2:
-                metric2_with_interval.append(self.activecontainerinfo[interval][metric2])
+                metric2_with_interval.append(self.active_container_info[interval][metric2])
             if objfunc2:
                 objfunc2_with_interval.append(self.metrics[interval + 1][objfunc2])
-        df = pd.DataFrame(metric_with_interval)  
-        ... # 生成dataframe，顺序：metric1, metric2, container_allocation, obj_func1, obj_fun2
+        df = pd.DataFrame(metric_with_interval)
+        ...  # 生成dataframe，顺序：metric1, metric2, container_allocation, obj_func1, obj_fun2
 ```
 
 ### `generateDatasetWithInterval2`
@@ -404,12 +425,13 @@ x轴是interval，y轴是host/container的数据。
 画总体performance的图
 
 ### `generateWorkloadWithInterval`
+
 ```python
     def generateWorkloadWithInterval(self, dirname):
         fig, axes = plt.subplots(5, 1, sharex=True, figsize=(4, 5))
-        x = list(range(len(self.workloadinfo)))
+        x = list(range(len(self.workload_info)))
         for i, metric in enumerate(['totalcontainers', 'newcontainers', 'deployed', 'migrations', 'inqueue']):
-            metric_with_interval = [self.workloadinfo[i][metric] for i in range(len(self.workloadinfo))]
+            metric_with_interval = [self.workload_info[i][metric] for i in range(len(self.workload_info))]
 ```
 画总体workload的图
 
