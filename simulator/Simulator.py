@@ -1,3 +1,5 @@
+import numpy as np
+
 from simulator.host.Host import *
 from simulator.container.Container import *
 
@@ -77,6 +79,7 @@ class Simulator:
                 return c
 
     def getHostByID(self, hostID):
+        # todo return last host when hostID = -1 BUG
         return self.hostlist[hostID]
 
     def getCreationIDs(self, migrations, containerIDs):
@@ -110,20 +113,8 @@ class Simulator:
         return deployed
 
     def allocateInit(self, decision):
-        migrations = []
-        routerBwToEach = self.totalbw / len(decision)
-        for (cid, hid) in decision:
-            container = self.getContainerByID(cid)
-            assert container.getHostID() == -1
-            numberAllocToHost = len(self.scheduler.getMigrationToHost(hid, decision))
-            allocbw = min(self.getHostByID(hid).bwCap.downlink / numberAllocToHost, routerBwToEach)
-            if self.getPlacementPossible(cid, hid):
-                if container.getHostID() != hid:
-                    migrations.append((cid, hid))
-                container.allocateAndExecute(hid, allocbw)
-            # destroy pointer to this unallocated container as book-keeping is done by workload model
-            else:
-                self.containerlist[cid] = None
+        migrations = self.allocation(decision)
+        self.execution()
         return migrations
 
     def destroyCompletedContainers(self):
@@ -162,10 +153,18 @@ class Simulator:
     def getContainersInHosts(self):
         return [len(self.getContainersOfHost(host)) for host in range(self.hostlimit)]
 
-    def simulationStep(self, decision):
+    def simulationStep(self, decision, save_fitness=False):
+        migrations = self.allocation(decision)
+        if save_fitness:
+            fitness = self.scheduler.allocation_fitness()
+            self.execution()
+            return migrations, fitness
+        self.execution()
+        return migrations
+
+    def allocation(self, decision):
         routerBwToEach = self.totalbw / len(decision) if len(decision) > 0 else self.totalbw
         migrations = []
-        containerIDsAllocated = []
         for (cid, hid) in decision:
             container = self.getContainerByID(cid)
             currentHostID = self.getContainerByID(cid).getHostID()
@@ -173,16 +172,20 @@ class Simulator:
             targetHost = self.getHostByID(hid)
             migrateFromNum = len(self.scheduler.getMigrationFromHost(currentHostID, decision))
             migrateToNum = len(self.scheduler.getMigrationToHost(hid, decision))
-            allocbw = min(targetHost.bwCap.downlink / migrateToNum, currentHost.bwCap.uplink / migrateFromNum,
-                          routerBwToEach)
+            download_bw = targetHost.bwCap.downlink / migrateToNum
+            upload_bw = currentHost.bwCap.uplink / migrateFromNum if currentHostID != -1 else np.inf
+            allocbw = min(download_bw, upload_bw, routerBwToEach)
             if hid != self.containerlist[cid].hostid and self.getPlacementPossible(cid, hid):
                 migrations.append((cid, hid))
-                container.allocateAndExecute(hid, allocbw)
-                containerIDsAllocated.append(cid)
-        # destroy pointer to unallocated containers as book-keeping is done by workload model
-        for (cid, hid) in decision:
-            if self.containerlist[cid].hostid == -1: self.containerlist[cid] = None
+                container.allocate(hid, allocbw)
+
+            # destroy unallocated container pointer in environment
         for i, container in enumerate(self.containerlist):
-            if container and i not in containerIDsAllocated:
-                container.execute(0)
+            if container and container.getHostID() == -1:
+                self.containerlist[i] = None
         return migrations
+
+    def execution(self):
+        for i, container in enumerate(self.containerlist):
+            if container:
+                container.execute()
