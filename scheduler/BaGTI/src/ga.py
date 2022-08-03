@@ -5,7 +5,7 @@ from src.constants import *
 
 
 class Individual(object):
-    def __init__(self, dataset, f, bounds, data_type, hosts, chromosome=[]):
+    def __init__(self, dataset, f, bounds, data_type, hosts, chromosome=None):
         self.dataset = dataset
         self.f = f
         self.hosts = hosts
@@ -26,10 +26,10 @@ class Individual(object):
                 child_chromosome.append(random.choice(self.dataset)[0][len(child_chromosome)])
         alloc = []
         for i in child_chromosome:
-            oneHot = [0] * self.hosts;
+            one_hot = [0] * self.hosts
             alist = i.tolist()[-self.hosts:]
-            oneHot[alist.index(max(alist))] = 1;
-            alloc.append(oneHot)
+            one_hot[alist.index(max(alist))] = 1
+            alloc.append(one_hot)
         child_chromosome = np.concatenate((self.chromosome[:, 0:-self.hosts], np.array(alloc)), axis=1)
         return Individual(self.dataset, self.f, self.bounds, self.data_type, self.hosts, child_chromosome)
 
