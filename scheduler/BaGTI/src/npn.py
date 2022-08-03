@@ -29,16 +29,16 @@ class NPNLinear(nn.Module):
         self.out_channels = out_channels
         self.dual_input = dual_input
 
-        self.W_m = nn.Parameter(
+        self.w_m = nn.Parameter(
             2 * math.sqrt(6) / math.sqrt(in_channels + out_channels) * (torch.rand(in_channels, out_channels) - 0.5))
         if init_type == 0:
-            W_s_init = 0.01 * math.sqrt(6) / math.sqrt(in_channels + out_channels) * torch.rand(in_channels,
+            w_s_init = 0.01 * math.sqrt(6) / math.sqrt(in_channels + out_channels) * torch.rand(in_channels,
                                                                                                 out_channels)
         else:
             bern = torch.bernoulli(torch.ones(in_channels, out_channels) * 0.5)
-            W_s_init = bern * math.exp(-2) + (1 - bern) * math.exp(-14)
-            print(W_s_init[:4, :4])
-        self.W_s_ = nn.Parameter(self.positive_s_inv(W_s_init, 0))
+            w_s_init = bern * math.exp(-2) + (1 - bern) * math.exp(-14)
+            print(w_s_init[:4, :4])
+        self.w_s_ = nn.Parameter(self.positive_s_inv(w_s_init, 0))
 
         self.bias_m = nn.Parameter(torch.zeros(out_channels))
         if init_type == 0:
@@ -56,15 +56,15 @@ class NPNLinear(nn.Module):
             x_s = x.clone()
             x_s = 0 * x_s
 
-        o_m = torch.mm(x_m, self.W_m)
+        o_m = torch.mm(x_m, self.w_m)
         o_m = o_m + self.bias_m.expand_as(o_m)
 
-        # W_s = torch.log(torch.exp(self.W_s_) + 1)
+        # w_s = torch.log(torch.exp(self.W_s_) + 1)
         # bias_s = torch.log(torch.exp(self.bias_s_) + 1)
-        W_s = self.positive_s(self.W_s_, 0)
+        w_s = self.positive_s(self.w_s_, 0)
         bias_s = self.positive_s(self.bias_s_, 0)
 
-        o_s = torch.mm(x_s, W_s) + torch.mm(x_s, self.W_m * self.W_m) + torch.mm(x_m * x_m, W_s)
+        o_s = torch.mm(x_s, w_s) + torch.mm(x_s, self.w_m * self.w_m) + torch.mm(x_m * x_m, w_s)
         o_s = o_s + bias_s.expand_as(o_s)
 
         # print('bingo om os')
