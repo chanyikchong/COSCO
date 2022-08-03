@@ -26,7 +26,7 @@ class HSOGOBI2Scheduler(Scheduler):
         if 'latency' in self.model.name:
             cpuC = [(c.getApparentIPS() / self.max_container_ips if c else 0) for c in self.env.containerlist]
             cpuC = np.array([cpuC]).transpose()
-            e, r = (0, 0) if self.env.stats == None else self.env.stats.runSimulationGOBI()
+            e, r = (0, 0) if self.env.stats == None else self.env.stats.run_simulation_GOBI()
             pred = np.broadcast_to(np.array([e / self.max_energy, r / self.max_response]), (self.hosts, 2))
             cpu = np.concatenate((cpu, cpuC, pred), axis=1)
         alloc = [];
