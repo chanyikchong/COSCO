@@ -21,6 +21,7 @@ class Container:
         self.active = True
         self.destroyAt = -1
         self.lastContainerSize = 0
+        self.last_migration_time = 0
 
     def getBaseIPS(self):
         return self.ipsmodel.getIPS()
@@ -58,28 +59,28 @@ class Container:
         # Migration time is sum of network latency
         # and time to transfer container based on
         # network bandwidth and container size.
-        lastMigrationTime = 0
         if self.hostid != hostID:
-            lastMigrationTime += self.getContainerSize() / allocBw
-            lastMigrationTime += abs(self.env.hostlist[self.hostid].latency - self.env.hostlist[hostID].latency)
+            self.last_migration_time += self.getContainerSize() / allocBw
+            self.last_migration_time += abs(self.env.hostlist[self.hostid].latency - self.env.hostlist[hostID].latency)
         self.hostid = hostID
-        return lastMigrationTime
+        return self.last_migration_time
 
-    def execute(self, lastMigrationTime):
+    def execute(self):
         # Migration time is the time to migrate to new host
         # Thus, execution of task takes place for interval
         # time - migration time with apparent ips
         assert self.hostid != -1
-        self.totalMigrationTime += lastMigrationTime
-        execTime = self.env.intervaltime - lastMigrationTime
+        self.totalMigrationTime += self.last_migration_time
+        execTime = self.env.intervaltime - self.last_migration_time
         apparentIPS = self.getApparentIPS()
-        requiredExecTime = (
-                                       self.ipsmodel.totalInstructions - self.ipsmodel.completedInstructions) / apparentIPS if apparentIPS else 0
+        requiredExecTime = (self.ipsmodel.totalInstructions - self.ipsmodel.completedInstructions) / apparentIPS if apparentIPS else 0
         self.totalExecTime += min(execTime, requiredExecTime)
         self.ipsmodel.completedInstructions += apparentIPS * min(execTime, requiredExecTime)
+        self.last_migration_time = 0
 
     def allocateAndExecute(self, hostID, allocBw):
-        self.execute(self.allocate(hostID, allocBw))
+        self.allocate(hostID, allocBw)
+        self.execute()
 
     def destroy(self):
         self.destroyAt = self.env.interval
