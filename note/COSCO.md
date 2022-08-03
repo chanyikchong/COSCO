@@ -454,6 +454,46 @@ x轴是interval，y轴是host/container的数据。
 ```
 保存特定数据list到dataframe。
 
+### `run_simulation_GOBI`
+```python
+    def run_simulation_GOBI(self):
+        host_alloc = []
+        container_alloc = [-1] * len(self.env.hostlist)
+        for i in range(len(self.env.hostlist)):
+            host_alloc.append([])
+```
+`host_alloc`保存host需要执行的containers
+```python
+        for c in self.env.containerlist:
+            if c and c.getHostID() != -1:
+                host_alloc[c.getHostID()].append(c.id)
+                container_alloc[c.id] = c.getHostID()
+```
+`container_alloc`保存container分配的host
+```python
+        selected = self.simulated_scheduler.selection()
+        decision = self.simulated_scheduler.filter_placement(self.simulated_scheduler.placement(selected))
+```
+标准run scheduler步骤
+```python
+        for cid, hid in decision:
+            if self.env.getPlacementPossible(cid, hid) and container_alloc[cid] != -1:
+                host_alloc[container_alloc[cid]].remove(cid)
+                host_alloc[hid].append(cid)
+```
+检查migration可行性，并更新host_alloc
+```python
+        energy_total_interval_pred = 0
+        for hid, cids in enumerate(host_alloc):
+            ips = 0
+            for cid in cids:
+                ips += self.env.containerlist[cid].getApparentIPS()
+            energy_total_interval_pred += self.env.hostlist[hid].getPowerFromIPS(ips)
+        return energy_total_interval_pred * self.env.intervaltime, max(0, np.mean(
+            [metric_d['avg_response_time'] for metric_d in self.metrics[-5:]]))
+```
+计算interval的energy，average response time取最近5次模拟的均值
+
 # Simulator环境
 该部分为使用Simulator环境下，各个类的执行说明
 ```python
