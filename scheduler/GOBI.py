@@ -1,9 +1,10 @@
 import sys
 
-sys.path.append('scheduler/BaGTI/')
-
-from .Scheduler import *
+from .Scheduler import Scheduler
 from .BaGTI.train import *
+
+
+sys.path.append('scheduler/BaGTI/')
 
 
 class GOBIScheduler(Scheduler):
@@ -16,26 +17,30 @@ class GOBIScheduler(Scheduler):
         dtl = data_type.split('_')
         _, _, self.max_container_ips = eval("load_" + '_'.join(dtl[:-1]) + "_data(" + dtl[-1] + ")")
 
-    def run_GOBI(self):
+    def _get_input_features(self):
         cpu = [host.getCPU() / 100 for host in self.env.hostlist]
         cpu = np.array([cpu]).transpose()
         if 'latency' in self.model.name:
-            cpuC = [(c.getApparentIPS() / self.max_container_ips if c else 0) for c in self.env.containerlist]
-            cpuC = np.array([cpuC]).transpose()
-            cpu = np.concatenate((cpu, cpuC), axis=1)
-        alloc = [];
+            cpu_container = [(c.getApparentIPS() / self.max_container_ips if c else 0) for c in self.env.containerlist]
+            cpu_container = np.array([cpu_container]).transpose()
+            cpu = np.concatenate((cpu, cpu_container), axis=1)
+        alloc = []
         prev_alloc = {}
         for c in self.env.containerlist:
-            oneHot = [0] * len(self.env.hostlist)
+            one_hot = [0] * len(self.env.hostlist)
             if c:
                 prev_alloc[c.id] = c.getHostID()
             if c and c.getHostID() != -1:
-                oneHot[c.getHostID()] = 1
+                one_hot[c.getHostID()] = 1
             else:
-                oneHot[np.random.randint(0, len(self.env.hostlist))] = 1
-            alloc.append(oneHot)
-        init = np.concatenate((cpu, alloc), axis=1)
-        init = torch.tensor(init, dtype=torch.float, requires_grad=True)
+                one_hot[np.random.randint(0, len(self.env.hostlist))] = 1
+            alloc.append(one_hot)
+        features = np.concatenate((cpu, alloc), axis=1)
+        features = torch.tensor(features, dtype=torch.float, requires_grad=True)
+        return features, prev_alloc
+
+    def run_GOBI(self):
+        init, prev_alloc = self._get_input_features()
         result, iteration, fitness = opt(init, self.model, [], self.data_type)
         decision = []
         for cid in prev_alloc:
@@ -52,3 +57,8 @@ class GOBIScheduler(Scheduler):
         first_alloc = np.all([not (c and c.getHostID() != -1) for c in self.env.containerlist])
         decision = self.run_GOBI()
         return decision
+
+    def allocation_fitness(self):
+        init, prev_alloc = self._get_input_features()
+        fitness = self.model.detail(init)
+        return fitness
