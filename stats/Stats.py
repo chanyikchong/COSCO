@@ -1,8 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-from memory_profiler import profile
-from time import time
 
 from scheduler.GOBI import GOBIScheduler
 
@@ -25,6 +23,8 @@ class Stats:
         self.all_container_info = []
         self.metrics = []
         self.scheduler_info = []
+        self._max_response_time = -np.inf
+        self._temp_get_normalization()
 
     def save_host_info(self):
         host_info = dict()
@@ -119,13 +119,51 @@ class Stats:
             scheduler_info['migration_time'] = self.env.intervalAllocTimings[-1]
         self.scheduler_info.append(scheduler_info)
 
-    def save_stats(self, deployed, migrations, destroyed, selected_containers, decision, scheduling_time):
+    def save_fitness(self, fitness):
+        energy_total_interval_pred = fitness[0][0].detach().item()
+        avg_response_time_pred = fitness[0][1].detach().item()
+        score = fitness[1].detach().item()
+        metrics = self.metrics[-1]
+        # metrics['energy_total_interval_score'] = energy_total_interval_pred * self._get_power_normalization()
+        # metrics['avg_response_time_score'] = avg_response_time_pred * self._get_latency_normalization()
+        metrics['energy_total_interval_score'] = energy_total_interval_pred * (
+                self.energy_max - self.energy_min) + self.energy_min
+        metrics['avg_response_time_score'] = avg_response_time_pred * (
+                    self.latency_max - self.latency_min) + self.latency_min
+        metrics['energy_total_interval_score_normal'] = energy_total_interval_pred
+        metrics['avf_response_time_score_normal'] = avg_response_time_pred
+        metrics['fitness'] = score
+
+    def save_stats(self, deployed, migrations, destroyed, selected_containers, decision, scheduling_time, **kwargs):
         self.save_host_info()
         self.save_workload_info(deployed, migrations)
         self.save_container_info()
         self.save_all_container_info()
         self.save_metrics(destroyed, migrations)
         self.save_scheduler_info(selected_containers, decision, scheduling_time)
+        if kwargs.get('fitness'):
+            self.save_fitness(kwargs.get('fitness'))
+
+    def _get_power_normalization(self):
+        max_power = 0
+        for h in self.env.hostlist:
+            max_power += h.get_power_max()
+        return max_power * self.env.intervaltime
+
+    def _get_latency_normalization(self):
+        metrics = self.metrics[-1]
+        interval_response_time = metrics.get('response_time')
+        if interval_response_time:
+            self._max_response_time = max(self._max_response_time, max(interval_response_time))
+            return self._max_response_time * len(interval_response_time)
+        return 0
+
+    def _temp_get_normalization(self):
+        df = pd.read_csv('scheduler/BaGTI/datasets/energy_latency_' + str(len(self.env.hostlist)) + '_scheduling.csv')
+        self.energy_max = df.iloc[:, -2].max()
+        self.energy_min = df.iloc[:, -2].min()
+        self.latency_max = df.iloc[:, -1].max()
+        self.latency_min = 0
 
     def run_simple_simulation(self, decision):
         host_alloc = []
@@ -167,7 +205,9 @@ class Stats:
         energy_total_interval_pred = 0
         for hid, cids in enumerate(host_alloc):
             ips = 0
-            for cid in cids: ips += self.env.containerlist[cid].getApparentIPS()
+            for cid in cids:
+                # get ips并不是模拟host的ips，而是container目前所在host的ips，BUG
+                ips += self.env.containerlist[cid].getApparentIPS()
             energy_total_interval_pred += self.env.hostlist[hid].getPowerFromIPS(ips)
         return energy_total_interval_pred * self.env.intervaltime, max(0, np.mean(
             [metric_d['avg_response_time'] for metric_d in self.metrics[-5:]]))
