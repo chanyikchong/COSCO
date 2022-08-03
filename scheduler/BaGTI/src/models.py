@@ -47,6 +47,11 @@ class energy_latency_50(nn.Module):
             x = Coeff_Energy * x[0] + Coeff_Latency * x[1]
         return x
 
+    def detail(self, x):
+        x = x.flatten()
+        x = self.find(x)
+        return x, Coeff_Energy * x[0] + Coeff_Latency * x[1]
+
 
 class energy_latency_10(nn.Module):
     def __init__(self):
@@ -68,6 +73,11 @@ class energy_latency_10(nn.Module):
         if not ('train' in argv[0] and 'train' in argv[2]):
             x = Coeff_Energy * x[0] + Coeff_Latency * x[1]
         return x
+
+    def detail(self, x):
+        x = x.flatten()
+        x = self.find(x)
+        return x, Coeff_Energy * x[0] + Coeff_Latency * x[1]
 
 
 class energy_latency2_10(nn.Module):
@@ -91,6 +101,10 @@ class energy_latency2_10(nn.Module):
             x = Coeff_Energy * x[0] + Coeff_Latency * x[1]
         return x
 
+    def detail(self, x):
+        x = x.flatten()
+        x = self.find(x)
+        return x, Coeff_Energy * x[0] + Coeff_Latency * x[1]
 
 class energy_latency2_50(nn.Module):
     def __init__(self):
@@ -113,6 +127,10 @@ class energy_latency2_50(nn.Module):
             x = Coeff_Energy * x[0] + Coeff_Latency * x[1]
         return x
 
+    def detail(self, x):
+        x = x.flatten()
+        x = self.find(x)
+        return x, Coeff_Energy * x[0] + Coeff_Latency * x[1]
 
 class stochastic_energy_latency_50(nn.Module):
     def __init__(self):
@@ -133,8 +151,12 @@ class stochastic_energy_latency_50(nn.Module):
         x, s = self.find(x)
         if not ('train' in argv[0] and 'train' in argv[2]):
             return x + UCB_K * s
-        return x, s
+        return x, s, x + UCB_K * s
 
+    def detail(self, x):
+        x = x.reshape(1, -1)
+        x, s = self.find(x)
+        return x, s, x + UCB_K * s
 
 class stochastic_energy_latency2_50(nn.Module):
     def __init__(self):
@@ -156,6 +178,11 @@ class stochastic_energy_latency2_50(nn.Module):
         if not ('train' in argv[0] and 'train' in argv[2]):
             return x + UCB_K * s
         return x, s
+
+    def detail(self, x):
+        x = x.reshape(1, -1)
+        x, s = self.find(x)
+        return x, s, x + UCB_K * s
 
 
 class stochastic_energy_latency_10(nn.Module):
@@ -179,6 +206,11 @@ class stochastic_energy_latency_10(nn.Module):
             return x + UCB_K * s
         return x, s
 
+    def detail(self, x):
+        x = x.reshape(1, -1)
+        x, s = self.find(x)
+        return x, s, x + UCB_K * s
+
 
 class stochastic_energy_latency2_10(nn.Module):
     def __init__(self):
@@ -200,3 +232,8 @@ class stochastic_energy_latency2_10(nn.Module):
         if not ('train' in argv[0] and 'train' in argv[2]):
             return x + UCB_K * s
         return x, s
+
+    def detail(self, x):
+        x = x.reshape(1, -1)
+        x, s = self.find(x)
+        return x, s, x + UCB_K * s
