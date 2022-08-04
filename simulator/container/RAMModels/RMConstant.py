@@ -1,4 +1,4 @@
-from .RM import *
+from .RM import RM
 
 
 class RMConstant(RM):

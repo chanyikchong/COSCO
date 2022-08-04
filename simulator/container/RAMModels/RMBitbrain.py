@@ -1,4 +1,4 @@
-from .RM import *
+from .RM import RM
 
 
 class RMBitbrain(RM):
@@ -9,7 +9,7 @@ class RMBitbrain(RM):
         self.write_list = write_list
 
     def ram(self):
-        size_list_count = (self.container.env.interval - self.container.startAt) % len(self.size_list)
-        read_list_count = (self.container.env.interval - self.container.startAt) % len(self.read_list)
-        write_list_count = (self.container.env.interval - self.container.startAt) % len(self.write_list)
+        size_list_count = (self.container.env.interval - self.container.start_at) % len(self.size_list)
+        read_list_count = (self.container.env.interval - self.container.start_at) % len(self.read_list)
+        write_list_count = (self.container.env.interval - self.container.start_at) % len(self.write_list)
         return self.size_list[size_list_count], self.read_list[read_list_count], self.write_list[write_list_count]
