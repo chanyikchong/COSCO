@@ -29,28 +29,7 @@ from simulator.workload.Azure2017Workload import *
 from simulator.workload.Azure2019Workload import *
 
 # Scheduler imports
-from scheduler.IQR_MMT_Random import IQRMMTRScheduler
-from scheduler.MAD_MMT_Random import MADMMTRScheduler
-from scheduler.MAD_MC_Random import MADMCRScheduler
-from scheduler.LR_MMT_Random import LRMMTRScheduler
-from scheduler.Random_Random_FirstFit import RFScheduler
-from scheduler.Random_Random_LeastFull import RLScheduler
-from scheduler.RLR_MMT_Random import RLRMMTRScheduler
-from scheduler.Threshold_MC_Random import TMCRScheduler
-from scheduler.Random_Random_Random import RandomScheduler
-from scheduler.HGP_LBFGS import HGPScheduler
-from scheduler.GA import GAScheduler
-from scheduler.GOBI import GOBIScheduler
-from scheduler.GOBI2 import GOBI2Scheduler
-from scheduler.DRL import DRLScheduler
-from scheduler.DQL import DQLScheduler
-from scheduler.POND import PONDScheduler
-from scheduler.SOGOBI import SOGOBIScheduler
-from scheduler.SOGOBI2 import SOGOBI2Scheduler
-from scheduler.HGOBI import HGOBIScheduler
-from scheduler.HGOBI2 import HGOBI2Scheduler
-from scheduler.HSOGOBI import HSOGOBIScheduler
-from scheduler.HSOGOBI2 import HSOGOBI2Scheduler
+import scheduler as sc
 
 # Auxiliary imports
 from stats.Stats import *
@@ -73,7 +52,7 @@ CONTAINERS = HOSTS
 TOTAL_POWER = 1000
 ROUTER_BW = 10000
 INTERVAL_TIME = 300  # seconds
-NEW_CONTAINERS = 0 if HOSTS == 10 else 5
+NEW_CONTAINERS = 0 if HOSTS == 10 else 3
 DB_NAME = ''
 DB_HOST = ''
 DB_PORT = 0
@@ -106,8 +85,8 @@ def initalize_environment(environment, logger):
 
     # Initialize scheduler
     ''' Can be LRMMTR, RF, RL, RM, Random, RLRMMTR, TMCR, TMMR, TMMTR, GA, GOBI (arg = 'energy_latency_'+str(HOSTS)) '''
-    scheduler = GOBIScheduler('energy_latency_' + str(HOSTS))  # GOBIScheduler('energy_latency_'+str(HOSTS))
-    # scheduler = RFScheduler()
+    scheduler = sc.GOBIScheduler('energy_latency_' + str(HOSTS))  # GOBIScheduler('energy_latency_'+str(HOSTS))
+    # scheduler = sc.RFScheduler()
 
     # Initialize Environment
     hostlist = datacenter.generateHosts()
