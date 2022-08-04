@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from scheduler.GOBI import GOBIScheduler
+from scheduler import GOBIScheduler
 
 plt.style.use(['science'])
 plt.rcParams["text.usetex"] = False
@@ -17,29 +17,30 @@ class Stats:
         self.scheduler = scheduler
         self.simulated_scheduler = GOBIScheduler('energy_latency_' + str(self.datacenter.num_hosts))
         self.simulated_scheduler.env = self.env
-        self.host_info = []
-        self.workload_info = []
-        self.active_container_info = []
-        self.all_container_info = []
-        self.metrics = []
-        self.scheduler_info = []
+        self.host_info = list()
+        self.workload_info = list()
+        self.active_container_info = list()
+        self.all_container_info = list()
+        self.metrics = list()
+        self.scheduler_info = list()
         self._max_response_time = -np.inf
         self._temp_get_normalization()
 
     def save_host_info(self):
         host_info = dict()
         host_info['interval'] = self.env.interval
-        host_info['cpu'] = [host.getCPU() for host in self.env.hostlist]
-        host_info['num_containers'] = [len(self.env.getContainersOfHost(i)) for i, host in enumerate(self.env.hostlist)]
-        host_info['power'] = [host.getPower() for host in self.env.hostlist]
-        host_info['base_ips'] = [host.getBaseIPS() for host in self.env.hostlist]
-        host_info['ips_available'] = [host.getIPSAvailable() for host in self.env.hostlist]
-        host_info['ips_cap'] = [host.ipsCap for host in self.env.hostlist]
-        host_info['apparent_ips'] = [host.getApparentIPS() for host in self.env.hostlist]
-        host_info['ram'] = [host.getCurrentRAM() for host in self.env.hostlist]
-        host_info['ram_available'] = [host.getRAMAvailable() for host in self.env.hostlist]
-        host_info['disk'] = [host.getCurrentDisk() for host in self.env.hostlist]
-        host_info['disk_available'] = [host.getDiskAvailable() for host in self.env.hostlist]
+        host_info['cpu'] = [host.get_cpu() for host in self.env.host_list]
+        host_info['num_containers'] = [len(self.env.get_containers_of_host(i)) for i, host in
+                                       enumerate(self.env.host_list)]
+        host_info['power'] = [host.get_power() for host in self.env.host_list]
+        host_info['base_ips'] = [host.get_base_ips() for host in self.env.host_list]
+        host_info['ips_available'] = [host.get_ips_available() for host in self.env.host_list]
+        host_info['ips_cap'] = [host.ips_cap for host in self.env.host_list]
+        host_info['apparent_ips'] = [host.get_apparent_ips() for host in self.env.host_list]
+        host_info['ram'] = [host.get_current_ram() for host in self.env.host_list]
+        host_info['ram_available'] = [host.get_ram_available() for host in self.env.host_list]
+        host_info['disk'] = [host.get_current_disk() for host in self.env.host_list]
+        host_info['disk_available'] = [host.get_disk_available() for host in self.env.host_list]
         self.host_info.append(host_info)
 
     def save_workload_info(self, deployed, migrations):
@@ -60,32 +61,32 @@ class Stats:
     def save_container_info(self):
         container_info = dict()
         container_info['interval'] = self.env.interval
-        container_info['active_containers'] = self.env.getNumActiveContainers()
-        container_info['ips'] = [(c.getBaseIPS() if c else 0) for c in self.env.containerlist]
-        container_info['apparent_ips'] = [(c.getApparentIPS() if c else 0) for c in self.env.containerlist]
-        container_info['ram'] = [(c.getRAM() if c else 0) for c in self.env.containerlist]
-        container_info['disk'] = [(c.getDisk() if c else 0) for c in self.env.containerlist]
-        container_info['creation_ids'] = [(c.creationID if c else -1) for c in self.env.containerlist]
-        container_info['host_alloc'] = [(c.getHostID() if c else -1) for c in self.env.containerlist]
-        container_info['active'] = [(c.active if c else False) for c in self.env.containerlist]
+        container_info['active_containers'] = self.env.get_num_active_containers()
+        container_info['ips'] = [(c.get_base_ips() if c else 0) for c in self.env.container_list]
+        container_info['apparent_ips'] = [(c.get_apparent_ips() if c else 0) for c in self.env.container_list]
+        container_info['ram'] = [(c.get_ram() if c else 0) for c in self.env.container_list]
+        container_info['disk'] = [(c.get_disk() if c else 0) for c in self.env.container_list]
+        container_info['creation_ids'] = [(c.creation_id if c else -1) for c in self.env.container_list]
+        container_info['host_alloc'] = [(c.get_host_id() if c else -1) for c in self.env.container_list]
+        container_info['active'] = [(c.active if c else False) for c in self.env.container_list]
         self.active_container_info.append(container_info)
 
     def save_all_container_info(self):
         container_info = dict()
-        all_created_containers = [self.env.getContainerByCID(cid) for cid in
+        all_created_containers = [self.env.get_container_by_cid(cid) for cid in
                                   list(np.where(self.workload.deployed_containers)[0])]
         container_info['interval'] = self.env.interval
         if self.datacenter.__class__.__name__ == 'Datacenter':
-            container_info['application'] = [self.env.getContainerByCID(cid).application for cid in
+            container_info['application'] = [self.env.get_container_by_cid(cid).application for cid in
                                              list(np.where(self.workload.deployed_containers)[0])]
-        container_info['ips'] = [c.getBaseIPS() if c.active else 0 for c in all_created_containers]
-        container_info['create'] = [c.createAt for c in all_created_containers]
-        container_info['start'] = [c.startAt for c in all_created_containers]
-        container_info['destroy'] = [c.destroyAt for c in all_created_containers]
-        container_info['apparent_ips'] = [c.getApparentIPS() if c.active else 0 for c in all_created_containers]
-        container_info['ram'] = [c.getRAM() if c.active else 0 for c in all_created_containers]
-        container_info['disk'] = [c.getDisk() if c.active else 0 for c in all_created_containers]
-        container_info['host_alloc'] = [c.getHostID() if c.active else -1 for c in all_created_containers]
+        container_info['ips'] = [c.get_base_ips() if c.active else 0 for c in all_created_containers]
+        container_info['create'] = [c.create_at for c in all_created_containers]
+        container_info['start'] = [c.start_at for c in all_created_containers]
+        container_info['destroy'] = [c.destroy_at for c in all_created_containers]
+        container_info['apparent_ips'] = [c.get_apparent_ips() if c.active else 0 for c in all_created_containers]
+        container_info['ram'] = [c.get_ram() if c.active else 0 for c in all_created_containers]
+        container_info['disk'] = [c.get_disk() if c.active else 0 for c in all_created_containers]
+        container_info['host_alloc'] = [c.get_host_id() if c.active else -1 for c in all_created_containers]
         container_info['active'] = [c.active for c in all_created_containers]
         self.all_container_info.append(container_info)
 
@@ -94,17 +95,17 @@ class Stats:
         metrics['interval'] = self.env.interval
         metrics['num_destroyed'] = len(destroyed)
         metrics['num_migrations'] = len(migrations)
-        metrics['energy'] = [host.getPower() * self.env.intervaltime for host in self.env.hostlist]
+        metrics['energy'] = [host.get_power() * self.env.interval_time for host in self.env.host_list]
         metrics['energy_total_interval'] = np.sum(metrics['energy'])
-        metrics['energy_per_container_interval'] = np.sum(metrics['energy']) / self.env.getNumActiveContainers()
-        metrics['response_time'] = [c.totalExecTime + c.totalMigrationTime for c in destroyed]
+        metrics['energy_per_container_interval'] = np.sum(metrics['energy']) / self.env.get_num_active_containers()
+        metrics['response_time'] = [c.total_exec_time + c.total_migration_time for c in destroyed]
         metrics['avg_response_time'] = np.average(metrics['response_time']) if len(destroyed) > 0 else 0
-        metrics['migration_time'] = [c.totalMigrationTime for c in destroyed]
+        metrics['migration_time'] = [c.total_migration_time for c in destroyed]
         metrics['avg_migration_time'] = np.average(metrics['migration_time']) if len(destroyed) > 0 else 0
-        metrics['sla_violations'] = len(np.where([c.destroyAt > c.sla for c in destroyed]))
+        metrics['sla_violations'] = len(np.where([c.destroy_at > c.sla for c in destroyed]))
         metrics['sla_violations_percentage'] = metrics['sla_violations'] * 100.0 / len(destroyed) if len(
             destroyed) > 0 else 0
-        metrics['wait_time'] = [c.startAt - c.createAt for c in destroyed]
+        metrics['wait_time'] = [c.start_at - c.create_at for c in destroyed]
         metrics['energy_total_interval_pred'], metrics['avg_response_time_pred'] = self.run_simulation_GOBI()
         self.metrics.append(metrics)
 
@@ -113,7 +114,7 @@ class Stats:
         scheduler_info['interval'] = self.env.interval
         scheduler_info['selection'] = selected_containers
         scheduler_info['decision'] = decision
-        scheduler_info['schedule'] = [(c.id, c.getHostID()) if c else (None, None) for c in self.env.containerlist]
+        scheduler_info['schedule'] = [(c.id, c.get_host_id()) if c else (None, None) for c in self.env.container_list]
         scheduler_info['scheduling_time'] = scheduling_time
         if self.datacenter.__class__.__name__ == 'Datacenter':
             scheduler_info['migration_time'] = self.env.intervalAllocTimings[-1]
@@ -129,7 +130,7 @@ class Stats:
         metrics['energy_total_interval_score'] = energy_total_interval_pred * (
                 self.energy_max - self.energy_min) + self.energy_min
         metrics['avg_response_time_score'] = avg_response_time_pred * (
-                    self.latency_max - self.latency_min) + self.latency_min
+                self.latency_max - self.latency_min) + self.latency_min
         metrics['energy_total_interval_score_normal'] = energy_total_interval_pred
         metrics['avf_response_time_score_normal'] = avg_response_time_pred
         metrics['fitness'] = score
@@ -146,9 +147,9 @@ class Stats:
 
     def _get_power_normalization(self):
         max_power = 0
-        for h in self.env.hostlist:
+        for h in self.env.host_list:
             max_power += h.get_power_max()
-        return max_power * self.env.intervaltime
+        return max_power * self.env.interval_time
 
     def _get_latency_normalization(self):
         metrics = self.metrics[-1]
@@ -159,47 +160,47 @@ class Stats:
         return 0
 
     def _temp_get_normalization(self):
-        df = pd.read_csv('scheduler/BaGTI/datasets/energy_latency_' + str(len(self.env.hostlist)) + '_scheduling.csv')
+        df = pd.read_csv('scheduler/BaGTI/datasets/energy_latency_' + str(len(self.env.host_list)) + '_scheduling.csv')
         self.energy_max = df.iloc[:, -2].max()
         self.energy_min = df.iloc[:, -2].min()
         self.latency_max = df.iloc[:, -1].max()
         self.latency_min = 0
 
     def run_simple_simulation(self, decision):
-        host_alloc = []
-        container_alloc = [-1] * len(self.env.hostlist)
-        for i in range(len(self.env.hostlist)):
+        host_alloc = list()
+        container_alloc = [-1] * len(self.env.host_list)
+        for i in range(len(self.env.host_list)):
             host_alloc.append([])
-        for c in self.env.containerlist:
-            if c and c.getHostID() != -1:
-                host_alloc[c.getHostID()].append(c.id)
-                container_alloc[c.id] = c.getHostID()
+        for c in self.env.container_list:
+            if c and c.get_host_id() != -1:
+                host_alloc[c.get_host_id()].append(c.id)
+                container_alloc[c.id] = c.get_host_id()
         decision = self.simulated_scheduler.filter_placement(decision)
         for cid, hid in decision:
-            if self.env.getPlacementPossible(cid, hid) and container_alloc[cid] != -1:
+            if self.env.get_placement_possible(cid, hid) and container_alloc[cid] != -1:
                 host_alloc[container_alloc[cid]].remove(cid)
                 host_alloc[hid].append(cid)
         energy_total_interval_pred = 0
         for hid, cids in enumerate(host_alloc):
             ips = 0
-            for cid in cids: ips += self.env.containerlist[cid].getApparentIPS()
-            energy_total_interval_pred += self.env.hostlist[hid].getPowerFromIPS(ips)
-        return energy_total_interval_pred * self.env.intervaltime, max(0, np.mean(
+            for cid in cids: ips += self.env.container_list[cid].get_apparent_ips()
+            energy_total_interval_pred += self.env.host_list[hid].get_power_from_ips(ips)
+        return energy_total_interval_pred * self.env.interval_time, max(0, np.mean(
             [metric_d['avg_response_time'] for metric_d in self.metrics[-5:]]))
 
     def run_simulation_GOBI(self):
-        host_alloc = []
-        container_alloc = [-1] * len(self.env.hostlist)
-        for i in range(len(self.env.hostlist)):
+        host_alloc = list()
+        container_alloc = [-1] * len(self.env.host_list)
+        for i in range(len(self.env.host_list)):
             host_alloc.append([])
-        for c in self.env.containerlist:
-            if c and c.getHostID() != -1:
-                host_alloc[c.getHostID()].append(c.id)
-                container_alloc[c.id] = c.getHostID()
+        for c in self.env.container_list:
+            if c and c.get_host_id() != -1:
+                host_alloc[c.get_host_id()].append(c.id)
+                container_alloc[c.id] = c.get_host_id()
         selected = self.simulated_scheduler.selection()
         decision = self.simulated_scheduler.filter_placement(self.simulated_scheduler.placement(selected))
         for cid, hid in decision:
-            if self.env.getPlacementPossible(cid, hid) and container_alloc[cid] != -1:
+            if self.env.get_placement_possible(cid, hid) and container_alloc[cid] != -1:
                 host_alloc[container_alloc[cid]].remove(cid)
                 host_alloc[hid].append(cid)
         energy_total_interval_pred = 0
@@ -207,9 +208,9 @@ class Stats:
             ips = 0
             for cid in cids:
                 # get ips并不是模拟host的ips，而是container目前所在host的ips，BUG
-                ips += self.env.containerlist[cid].getApparentIPS()
-            energy_total_interval_pred += self.env.hostlist[hid].getPowerFromIPS(ips)
-        return energy_total_interval_pred * self.env.intervaltime, max(0, np.mean(
+                ips += self.env.container_list[cid].get_apparent_ips()
+            energy_total_interval_pred += self.env.host_list[hid].get_power_from_ips(ips)
+        return energy_total_interval_pred * self.env.interval_time, max(0, np.mean(
             [metric_d['avg_response_time'] for metric_d in self.metrics[-5:]]))
 
     ########################################################################################################
@@ -219,19 +220,19 @@ class Stats:
         title = obj + '_' + metric + '_with_interval'
         total_intervals = len(listinfo)
         x = list(range(total_intervals))
-        metric_with_interval = []
-        metric2_with_interval = []
-        ylimit = 0
-        ylimit2 = 0
+        metric_with_interval = list()
+        metric2_with_interval = list()
+        y_limit = 0
+        y_limit2 = 0
         for hostID in range(len(listinfo[0][metric])):  # todo change name on hostID
             metric_with_interval.append([listinfo[interval][metric][hostID] for interval in range(total_intervals)])
-            ylimit = max(ylimit, max(metric_with_interval[-1]))
+            y_limit = max(y_limit, max(metric_with_interval[-1]))
             if metric2:
                 metric2_with_interval.append(
                     [listinfo[interval][metric2][hostID] for interval in range(total_intervals)])
-                ylimit2 = max(ylimit2, max(metric2_with_interval[-1]))
+                y_limit2 = max(y_limit2, max(metric2_with_interval[-1]))
         for hostID in range(len(listinfo[0][metric])):
-            axes[hostID].set_ylim(0, max(ylimit, ylimit2))
+            axes[hostID].set_ylim(0, max(y_limit, y_limit2))
             axes[hostID].plot(x, metric_with_interval[hostID])
             if metric2:
                 axes[hostID].plot(x, metric2_with_interval[hostID])
@@ -284,7 +285,7 @@ class Stats:
 
     def generate_complete_dataset(self, dirname, data, name):
         title = name + '_with_interval'
-        metric_with_interval = []
+        metric_with_interval = list()
         headers = list(data[0].keys())
         for datum in data:
             metric_with_interval.append([datum[value] for value in datum.keys()])
@@ -295,11 +296,11 @@ class Stats:
         title = metric + '_' + (metric2 + '_' if metric2 else "") + (objfunc + '_' if objfunc else "") + (
             objfunc2 + '_' if objfunc2 else "") + 'with_interval'
         total_intervals = len(self.host_info)
-        metric_with_interval = []
-        metric2_with_interval = []  # metric1 is of host and metric2 is of containers
-        host_alloc_with_interval = []
-        objfunc2_with_interval = []
-        objfunc_with_interval = []
+        metric_with_interval = list()
+        metric2_with_interval = list()  # metric1 is of host and metric2 is of containers
+        host_alloc_with_interval = list()
+        objfunc2_with_interval = list()
+        objfunc_with_interval = list()
         for interval in range(total_intervals - 1):
             metric_with_interval.append(
                 [self.host_info[interval][metric][hostID] for hostID in range(len(self.host_info[0][metric]))])
@@ -323,13 +324,13 @@ class Stats:
     def generate_dataset_with_interval2(self, dirname, metric, metric2, metric3, metric4, objfunc, objfunc2):
         title = metric + '_' + metric2 + '_' + metric3 + '_' + metric4 + '_' + objfunc + '_' + objfunc2 + '_' + 'with_interval'
         total_intervals = len(self.host_info)
-        metric_with_interval = []
-        metric2_with_interval = []
-        metric3_with_interval = []
-        metric4_with_interval = []
-        host_alloc_with_interval = []
-        objfunc2_with_interval = []
-        objfunc_with_interval = []
+        metric_with_interval = list()
+        metric2_with_interval = list()
+        metric3_with_interval = list()
+        metric4_with_interval = list()
+        host_alloc_with_interval = list()
+        objfunc2_with_interval = list()
+        objfunc_with_interval = list()
         for interval in range(total_intervals - 1):
             metric_with_interval.append(
                 [self.host_info[interval][metric][hostID] for hostID in range(len(self.host_info[0][metric]))])
