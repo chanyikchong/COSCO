@@ -2,87 +2,91 @@ class Container:
     # IPS = ips requirement
     # RAM = ram requirement in MB
     # Size = container size in MB
-    def __init__(self, ID, creationID, creationInterval, IPSModel, RAMModel, DiskModel, Environment, HostID=-1):
-        self.id = ID
-        self.creationID = creationID
-        self.ipsmodel = IPSModel
-        self.ipsmodel.allocContainer(self)
-        self.sla = self.ipsmodel.SLA
-        self.rammodel = RAMModel
-        self.rammodel.allocContainer(self)
-        self.diskmodel = DiskModel
-        self.diskmodel.allocContainer(self)
-        self.hostid = HostID
-        self.env = Environment
-        self.createAt = creationInterval
-        self.startAt = self.env.interval
-        self.totalExecTime = 0
-        self.totalMigrationTime = 0
+    def __init__(self, identity, creation_id, creation_interval, ips_model, ram_model, disk_model, environment,
+                 host_id=-1):
+        self.id = identity
+        self.creation_id = creation_id
+        self.ips_model = ips_model
+        self.ips_model.alloc_container(self)
+        self.sla = self.ips_model.sla
+        self.ram_model = ram_model
+        self.ram_model.alloc_container(self)
+        self.disk_model = disk_model
+        self.disk_model.alloc_container(self)
+        self.host_id = host_id
+        self.env = environment
+        self.create_at = creation_interval
+        self.start_at = self.env.interval
+        self.total_exec_time = 0
+        self.total_migration_time = 0
         self.active = True
-        self.destroyAt = -1
-        self.lastContainerSize = 0
+        self.destroy_at = -1
+        self.last_container_size = 0
         self.last_migration_time = 0
 
-    def getBaseIPS(self):
-        return self.ipsmodel.getIPS()
+    def get_base_ips(self):
+        return self.ips_model.get_ips()
 
-    def getApparentIPS(self):
-        if self.hostid == -1: return self.ipsmodel.getMaxIPS()
-        hostBaseIPS = self.getHost().getBaseIPS()
-        hostIPSCap = self.getHost().ipsCap
-        canUseIPS = (hostIPSCap - hostBaseIPS) / len(self.env.getContainersOfHost(self.hostid))
-        if canUseIPS < 0:
+    def get_apparent_ips(self):
+        if self.host_id == -1:
+            return self.ips_model.get_max_ips()
+        host_base_ips = self.get_host().get_base_ips()
+        host_ips_cap = self.get_host().ips_cap
+        can_use_ips = (host_ips_cap - host_base_ips) / len(self.env.getContainersOfHost(self.host_id))
+        if can_use_ips < 0:
             return 0
-        return min(self.ipsmodel.getMaxIPS(), self.getBaseIPS() + canUseIPS)
+        return min(self.ips_model.get_max_ips(), self.get_base_ips() + can_use_ips)
 
-    def getRAM(self):
-        rsize, rread, rwrite = self.rammodel.ram()
-        self.lastContainerSize = rsize
-        return rsize, rread, rwrite
+    def get_ram(self):
+        r_size, r_read, r_write = self.ram_model.ram()
+        self.last_container_size = r_size
+        return r_size, r_read, r_write
 
-    def getDisk(self):
-        return self.diskmodel.disk()
+    def get_disk(self):
+        return self.disk_model.disk()
 
-    def getContainerSize(self):
-        if self.lastContainerSize == 0:
-            self.getRAM()
-        return self.lastContainerSize
+    def get_container_size(self):
+        if self.last_container_size == 0:
+            self.get_ram()
+        return self.last_container_size
 
-    def getHostID(self):
-        return self.hostid
+    def get_host_id(self):
+        return self.host_id
 
-    def getHost(self):
-        return self.env.getHostByID(self.hostid)
+    def get_host(self):
+        return self.env.getHostByID(self.host_id)
 
-    def allocate(self, hostID, allocBw):
+    def allocate(self, host_id, alloc_bw):
         # Migrate if allocated to a different host
         # Migration time is sum of network latency
         # and time to transfer container based on
         # network bandwidth and container size.
-        if self.hostid != hostID:
-            self.last_migration_time += self.getContainerSize() / allocBw
-            self.last_migration_time += abs(self.env.hostlist[self.hostid].latency - self.env.hostlist[hostID].latency)
-        self.hostid = hostID
+        if self.host_id != host_id:
+            self.last_migration_time += self.get_container_size() / alloc_bw
+            self.last_migration_time += abs(
+                self.env.hostlist[self.host_id].latency - self.env.hostlist[host_id].latency)
+        self.host_id = host_id
         return self.last_migration_time
 
     def execute(self):
         # Migration time is the time to migrate to new host
         # Thus, execution of task takes place for interval
         # time - migration time with apparent ips
-        assert self.hostid != -1
-        self.totalMigrationTime += self.last_migration_time
-        execTime = self.env.intervaltime - self.last_migration_time
-        apparentIPS = self.getApparentIPS()
-        requiredExecTime = (self.ipsmodel.totalInstructions - self.ipsmodel.completedInstructions) / apparentIPS if apparentIPS else 0
-        self.totalExecTime += min(execTime, requiredExecTime)
-        self.ipsmodel.completedInstructions += apparentIPS * min(execTime, requiredExecTime)
+        assert self.host_id != -1
+        self.total_migration_time += self.last_migration_time
+        exec_time = self.env.intervaltime - self.last_migration_time
+        apparent_ips = self.get_apparent_ips()
+        remain_instructions = self.ips_model.total_instructions - self.ips_model.completed_instructions
+        required_exec_time = remain_instructions / apparent_ips if apparent_ips else 0
+        self.total_exec_time += min(exec_time, required_exec_time)
+        self.ips_model.completed_instructions += apparent_ips * min(exec_time, required_exec_time)
         self.last_migration_time = 0
 
-    def allocateAndExecute(self, hostID, allocBw):
-        self.allocate(hostID, allocBw)
+    def allocate_execute(self, host_id, alloc_bw):
+        self.allocate(host_id, alloc_bw)
         self.execute()
 
     def destroy(self):
-        self.destroyAt = self.env.interval
-        self.hostid = -1
+        self.destroy_at = self.env.interval
+        self.host_id = -1
         self.active = False
