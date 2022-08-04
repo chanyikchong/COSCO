@@ -1,7 +1,9 @@
-from .Workload import *
-from simulator.container.IPSModels.IPSMConstant import *
-from simulator.container.RAMModels.RMConstant import *
-from simulator.container.DiskModels.DMConstant import *
+import numpy as np
+
+from simulator.workload.Workload import Workload
+from simulator.container.IPSModels.IPSMConstant import IPSMConstant
+from simulator.container.RAMModels.RMConstant import RMConstant
+from simulator.container.DiskModels.DMConstant import DMConstant
 
 
 class SWSD(Workload):
@@ -9,19 +11,19 @@ class SWSD(Workload):
         super().__init__()
         self.num_workloads = num_workloads
 
-    def generateNewContainers(self, interval):
-        workloadlist = []
+    def generate_new_containers(self, interval):
+        workload_list = []
         for i in range(self.num_workloads):
-            CreationID = self.creation_id
-            ipsMultiplier = np.random.randint(1, 5)
-            IPSModel = IPSMConstant(1000 * ipsMultiplier, 1500 * ipsMultiplier, 4 * ipsMultiplier,
-                                    interval + 3 * ipsMultiplier)
-            ramMultiplier = np.random.randint(1, 5)
-            RAMModel = RMConstant(100 * ramMultiplier, 50 * ramMultiplier, 20 * ramMultiplier)
-            diskMultiplier = np.random.randint(0, 1)
-            DiskModel = DMConstant(300 * diskMultiplier, 100 * diskMultiplier, 120 * diskMultiplier)
-            workloadlist.append((CreationID, interval, IPSModel, RAMModel, DiskModel))
+            creation_id = self.creation_id
+            ips_multiplier = np.random.randint(1, 5)
+            ips_model = IPSMConstant(1000 * ips_multiplier, 1500 * ips_multiplier, 4 * ips_multiplier,
+                                    interval + 3 * ips_multiplier)
+            ram_multiplier = np.random.randint(1, 5)
+            ram_model = RMConstant(100 * ram_multiplier, 50 * ram_multiplier, 20 * ram_multiplier)
+            disk_multiplier = np.random.randint(0, 1)
+            disk_model = DMConstant(300 * disk_multiplier, 100 * disk_multiplier, 120 * disk_multiplier)
+            workload_list.append((creation_id, interval, ips_model, ram_model, disk_model))
             self.creation_id += 1
-        self.createdContainers += workloadlist
-        self.deployedContainers += [False] * len(workloadlist)
-        return self.getUndeployedContainers()
+        self.created_containers += workload_list
+        self.deployed_containers += [False] * len(workload_list)
+        return self.get_undeployed_containers()

@@ -4,17 +4,17 @@ import numpy as np
 class Workload:
     def __init__(self):
         self.creation_id = 0
-        self.createdContainers = []
-        self.deployedContainers = []
+        self.created_containers = []
+        self.deployed_containers = []
 
-    def getUndeployedContainers(self):
+    def get_undeployed_containers(self):
         undeployed = []
-        for i, deployed in enumerate(self.deployedContainers):
+        for i, deployed in enumerate(self.deployed_containers):
             if not deployed:
-                undeployed.append(self.createdContainers[i])
+                undeployed.append(self.created_containers[i])
         return undeployed
 
-    def updateDeployedContainers(self, creationIDs):
-        for cid in creationIDs:
-            assert not self.deployedContainers[cid]
-            self.deployedContainers[cid] = True
+    def update_deployed_containers(self, creation_ids):
+        for cid in creation_ids:
+            assert not self.deployed_containers[cid]
+            self.deployed_containers[cid] = True
