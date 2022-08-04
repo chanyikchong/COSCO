@@ -3,7 +3,6 @@ import sys
 from .Scheduler import Scheduler
 from .BaGTI.train import *
 
-
 sys.path.append('scheduler/BaGTI/')
 
 
@@ -18,22 +17,23 @@ class GOBIScheduler(Scheduler):
         _, _, self.max_container_ips = eval("load_" + '_'.join(dtl[:-1]) + "_data(" + dtl[-1] + ")")
 
     def _get_input_features(self):
-        cpu = [host.getCPU() / 100 for host in self.env.hostlist]
+        cpu = [host.get_cpu() / 100 for host in self.env.host_list]
         cpu = np.array([cpu]).transpose()
         if 'latency' in self.model.name:
-            cpu_container = [(c.getApparentIPS() / self.max_container_ips if c else 0) for c in self.env.containerlist]
+            cpu_container = [(c.get_apparent_ips() / self.max_container_ips if c else 0) for c in
+                             self.env.container_list]
             cpu_container = np.array([cpu_container]).transpose()
             cpu = np.concatenate((cpu, cpu_container), axis=1)
         alloc = []
         prev_alloc = {}
-        for c in self.env.containerlist:
-            one_hot = [0] * len(self.env.hostlist)
+        for c in self.env.container_list:
+            one_hot = [0] * len(self.env.host_list)
             if c:
-                prev_alloc[c.id] = c.getHostID()
-            if c and c.getHostID() != -1:
-                one_hot[c.getHostID()] = 1
+                prev_alloc[c.id] = c.get_host_id()
+            if c and c.get_host_id() != -1:
+                one_hot[c.get_host_id()] = 1
             else:
-                one_hot[np.random.randint(0, len(self.env.hostlist))] = 1
+                one_hot[np.random.randint(0, len(self.env.host_list))] = 1
             alloc.append(one_hot)
         features = np.concatenate((cpu, alloc), axis=1)
         features = torch.tensor(features, dtype=torch.float, requires_grad=True)
@@ -53,8 +53,8 @@ class GOBIScheduler(Scheduler):
     def selection(self):
         return []
 
-    def placement(self, containerIDs):
-        first_alloc = np.all([not (c and c.getHostID() != -1) for c in self.env.containerlist])
+    def placement(self, container_ids):
+        first_alloc = np.all([not (c and c.get_host_id() != -1) for c in self.env.container_list])
         decision = self.run_GOBI()
         return decision
 

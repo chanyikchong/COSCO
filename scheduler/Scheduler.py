@@ -13,10 +13,10 @@ class Scheduler:
         self.env = env
 
     def selection(self):
-        pass
+        raise NotImplementedError
 
     def placement(self, container_list):
-        pass
+        raise NotImplementedError
 
     def filter_placement(self, decision):
         filtered_decision = []

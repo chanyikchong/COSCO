@@ -1,4 +1,4 @@
-from .Scheduler import *
+from .Scheduler import Scheduler
 from .A2C.rl import *
 import numpy as np
 from copy import deepcopy
@@ -28,8 +28,8 @@ class PONDScheduler(Scheduler):
         weight = 0
         for cid, hid in alloc:
             # UCB weight calculation
-            app = self.env.containerlist[cid].application if hasattr(self.env.containerlist[cid],
-                                                                     'application') else self.default_app
+            app = self.env.container_list[cid].application if hasattr(self.env.container_list[cid],
+                                                                      'application') else self.default_app
             weight += 10 * self.r[app][hid] * sqrt(np.log(100) / self.n[app][hid])
         return weight
 
@@ -41,55 +41,58 @@ class PONDScheduler(Scheduler):
         min_e, max_e = min(all_energies), max(all_energies)
         energy = (energy - min_e) / (0.1 + max_e - min_e)
         latency = self.env.stats.metrics[-1]['avgresponsetime']
-        latency = (latency) / (0.1 + max(all_latencies))
+        latency = latency / (0.1 + max(all_latencies))
         return Coeff_Energy * energy + Coeff_Latency * latency
 
     def update_r(self, alloc):
         new_r = -1 * self.get_last_value()
         for cid, hid in alloc:
-            app = self.env.containerlist[cid].application if hasattr(self.env.containerlist[cid],
-                                                                     'application') else self.default_app
+            app = self.env.container_list[cid].application if hasattr(self.env.container_list[cid],
+                                                                      'application') else self.default_app
             self.r[app][hid] = self.r[app][hid] * self.n[app][hid] + new_r
         for cid, hid in alloc:
-            app = self.env.containerlist[cid].application if hasattr(self.env.containerlist[cid],
-                                                                     'application') else self.default_app
+            app = self.env.container_list[cid].application if hasattr(self.env.container_list[cid],
+                                                                      'application') else self.default_app
             self.n[app][hid] += 1
         for cid, hid in alloc:
-            app = self.env.containerlist[cid].application if hasattr(self.env.containerlist[cid],
-                                                                     'application') else self.default_app
+            app = self.env.container_list[cid].application if hasattr(self.env.container_list[cid],
+                                                                      'application') else self.default_app
             self.r[app][hid] = self.r[app][hid] / self.n[app][hid]
 
     def run_POND(self):
-        # print(self.r)
-        alloc = [];
+        alloc = []
         prev_alloc = {}
-        for c in self.env.containerlist:
-            if c: prev_alloc[c.id] = c.getHostID()
-            if c and c.getHostID() != -1:
-                hid = c.getHostID()
+        for c in self.env.container_list:
+            if c:
+                prev_alloc[c.id] = c.get_host_id()
+            if c and c.get_host_id() != -1:
+                hid = c.get_host_id()
             else:
                 hid = np.random.randint(0, self.num_hosts)
-            if c: alloc.append((c.id, hid))
+            if c:
+                alloc.append((c.id, hid))
         cur_weight = self.calc_weight(alloc)
         # Max weight loop
         for i, j in enumerate(alloc):
             cid, hid = j
             new_alloc = deepcopy(alloc)
             for new_hid in range(0, self.num_hosts):
-                if new_hid == hid: continue
+                if new_hid == hid:
+                    continue
                 new_alloc[i] = (new_alloc[i][0], new_hid)
                 new_weight = self.calc_weight(new_alloc)
                 if new_weight > cur_weight and randint(1, 100) < 5:
                     cur_weight, alloc = new_weight, new_alloc
-        decision = []
+        decision = list()
         for cid, hid in alloc:
-            if prev_alloc[cid] != hid: decision.append((cid, hid))
+            if prev_alloc[cid] != hid:
+                decision.append((cid, hid))
         self.update_r(alloc)
         return decision
 
     def selection(self):
         return []
 
-    def placement(self, containerIDs):
+    def placement(self, container_ids):
         decision = self.run_POND()
         return decision

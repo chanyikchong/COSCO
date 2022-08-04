@@ -1,10 +1,10 @@
 import sys
 
-sys.path.append('scheduler/BaGTI/')
-
-from .Scheduler import *
+from .Scheduler import Scheduler
 from .BaGTI.train import *
 from .BaGTI.src.utils import *
+
+sys.path.append('scheduler/BaGTI/')
 
 
 class HSOGOBIScheduler(Scheduler):
@@ -19,22 +19,23 @@ class HSOGOBIScheduler(Scheduler):
         _, _, self.max_container_ips = eval("load_" + '_'.join(dtl[:-1]) + "_data(" + dtl[-1] + ")")
 
     def run_HSOGOBI(self):
-        cpu = [host.getCPU() / 100 for host in self.env.hostlist]
+        cpu = [host.get_cpu() / 100 for host in self.env.host_list]
         cpu = np.array([cpu]).transpose()
         if 'latency' in self.model.name:
-            cpuC = [(c.getApparentIPS() / self.max_container_ips if c else 0) for c in self.env.containerlist]
-            cpuC = np.array([cpuC]).transpose()
-            cpu = np.concatenate((cpu, cpuC), axis=1)
-        alloc = [];
+            cpu_container = [(c.get_apparent_ips() / self.max_container_ips if c else 0) for c in self.env.container_list]
+            cpu_container = np.array([cpu_container]).transpose()
+            cpu = np.concatenate((cpu, cpu_container), axis=1)
+        alloc = []
         prev_alloc = {}
-        for c in self.env.containerlist:
-            oneHot = [0] * len(self.env.hostlist)
-            if c: prev_alloc[c.id] = c.getHostID()
-            if c and c.getHostID() != -1:
-                oneHot[c.getHostID()] = 1
+        for c in self.env.container_list:
+            one_hot = [0] * len(self.env.host_list)
+            if c:
+                prev_alloc[c.id] = c.get_host_id()
+            if c and c.get_host_id() != -1:
+                one_hot[c.get_host_id()] = 1
             else:
-                oneHot[np.random.randint(0, len(self.env.hostlist))] = 1
-            alloc.append(oneHot)
+                one_hot[np.random.randint(0, len(self.env.host_list))] = 1
+            alloc.append(one_hot)
         init = np.concatenate((cpu, alloc), axis=1)
         init = torch.tensor(init, dtype=torch.float, requires_grad=True)
         result, iteration, fitness = so_opt(init, self.model, [], self.data_type)
@@ -42,13 +43,14 @@ class HSOGOBIScheduler(Scheduler):
         for cid in prev_alloc:
             one_hot = result[cid, -self.hosts:].tolist()
             new_host = one_hot.index(max(one_hot))
-            if prev_alloc[cid] != new_host: decision.append((cid, new_host))
+            if prev_alloc[cid] != new_host:
+                decision.append((cid, new_host))
         return decision
 
     def selection(self):
         return []
 
-    def placement(self, containerIDs):
-        first_alloc = np.all([not (c and c.getHostID() != -1) for c in self.env.containerlist])
+    def placement(self, container_ids):
+        first_alloc = np.all([not (c and c.get_host_id() != -1) for c in self.env.container_list])
         decision = self.run_HSOGOBI()
         return decision

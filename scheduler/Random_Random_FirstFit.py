@@ -1,6 +1,4 @@
-from .Scheduler import *
-import numpy as np
-from copy import deepcopy
+from .Scheduler import Scheduler
 
 
 class RFScheduler(Scheduler):
@@ -8,7 +6,7 @@ class RFScheduler(Scheduler):
         super().__init__()
 
     def selection(self):
-        return self.RandomContainerSelection()
+        return self.random_container_selection()
 
-    def placement(self, containerIDs):
-        return self.FirstFitPlacement(containerIDs)
+    def placement(self, container_ids):
+        return self.first_fit_placement(container_ids)

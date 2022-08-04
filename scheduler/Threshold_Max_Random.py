@@ -1,6 +1,4 @@
-from .Scheduler import *
-import numpy as np
-from copy import deepcopy
+from .Scheduler import Scheduler
 
 
 class TMRScheduler(Scheduler):
@@ -8,9 +6,9 @@ class TMRScheduler(Scheduler):
         super().__init__()
 
     def selection(self):
-        selectedHostIDs = self.ThresholdHostSelection()
-        selectedIDs = self.MaxUseContainerSelection(selectedHostIDs)
-        return selectedIDs
+        selected_host_ids = self.threshold_host_selection()
+        selected_ids = self.max_use_container_selection(selected_host_ids)
+        return selected_ids
 
-    def placement(self, containerIDs):
-        return self.RandomPlacement(containerIDs)
+    def placement(self, container_ids):
+        return self.random_placement(container_ids)
