@@ -1,194 +1,192 @@
-import math
-from utils.MathUtils import *
-from utils.MathConstants import *
-import pandas as pd
-from statistics import median
 import numpy as np
+import pandas as pd
+
+from utils.MathUtils import loess
+from utils.MathConstants import LOCAL_REGRESSION_BANDWIDTH, LOCAL_REGRESSION_CPU_MULTIPLIER
 
 
 class Scheduler:
     def __init__(self):
         self.env = None
 
-    def setEnvironment(self, env):
+    def set_environment(self, env):
         self.env = env
 
     def selection(self):
         pass
 
-    def placement(self, containerlist):
+    def placement(self, container_list):
         pass
 
     def filter_placement(self, decision):
         filtered_decision = []
         for cid, hid in decision:
-            if self.env.getContainerByID(cid).getHostID() != hid:
+            if self.env.get_container_by_id(cid).get_host_id() != hid:
                 filtered_decision.append((cid, hid))
         return filtered_decision
 
-    def getMigrationFromHost(self, hostID, decision):
-        containerIDs = []
+    def get_migration_from_host(self, host_id, decision):
+        container_ids = []
         for (cid, _) in decision:
-            hid = self.env.getContainerByID(cid).getHostID()
-            if hid == hostID:
-                containerIDs.append(cid)
-        return containerIDs
+            hid = self.env.get_container_by_id(cid).get_host_id()
+            if hid == host_id:
+                container_ids.append(cid)
+        return container_ids
 
-    def getMigrationToHost(self, hostID, decision):
-        containerIDs = []
+    def get_migration_to_host(self, host_id, decision):
+        container_ids = []
         for (cid, hid) in decision:
-            if hid == hostID:
-                containerIDs.append(cid)
-        return containerIDs
+            if hid == host_id:
+                container_ids.append(cid)
+        return container_ids
 
     # Host selection
+    def threshold_host_selection(self):
+        selected_host_ids = []
+        for i, host in enumerate(self.env.host_list):
+            if host.get_cpu() > 70:
+                selected_host_ids.append(i)
+        return selected_host_ids
 
-    def ThresholdHostSelection(self):
-        selectedHostIDs = []
-        for i, host in enumerate(self.env.hostlist):
-            if host.getCPU() > 70:
-                selectedHostIDs.append(i)
-        return selectedHostIDs
-
-    def LRSelection(self, utilHistory):
-        if (len(utilHistory) < LOCAL_REGRESSION_BANDWIDTH):
-            return self.ThresholdHostSelection()
-        selectedHostIDs = [];
+    def lr_selection(self, util_history):
+        if len(util_history) < LOCAL_REGRESSION_BANDWIDTH:
+            return self.threshold_host_selection()
+        selected_host_ids = []
         x = list(range(LOCAL_REGRESSION_BANDWIDTH))
-        for i, host in enumerate(self.env.hostlist):
-            hostL = [utilHistory[j][i] for j in range(len(utilHistory))]
-            _, estimates = loess(x, hostL[-LOCAL_REGRESSION_BANDWIDTH:], poly_degree=1, alpha=0.6)
+        for i, host in enumerate(self.env.host_list):
+            host_l = [util_history[j][i] for j in range(len(util_history))]
+            _, estimates = loess(x, host_l[-LOCAL_REGRESSION_BANDWIDTH:], poly_degree=1, alpha=0.6)
             weights = estimates['b'].values[-1]
-            predictedCPU = weights[0] + weights[1] * (LOCAL_REGRESSION_BANDWIDTH + 1)
-            if LOCAL_REGRESSION_CPU_MULTIPLIER * predictedCPU >= 100:
-                selectedHostIDs.append(i)
-        return selectedHostIDs
+            predicted_cpu = weights[0] + weights[1] * (LOCAL_REGRESSION_BANDWIDTH + 1)
+            if LOCAL_REGRESSION_CPU_MULTIPLIER * predicted_cpu >= 100:
+                selected_host_ids.append(i)
+        return selected_host_ids
 
-    def RLRSelection(self, utilHistory):
-        if (len(utilHistory) < LOCAL_REGRESSION_BANDWIDTH):
-            return self.ThresholdHostSelection()
-        selectedHostIDs = [];
+    def rlr_selection(self, util_history):
+        if len(util_history) < LOCAL_REGRESSION_BANDWIDTH:
+            return self.threshold_host_selection()
+        selected_host_ids = list()
         x = list(range(LOCAL_REGRESSION_BANDWIDTH))
-        for i, host in enumerate(self.env.hostlist):
-            hostL = [utilHistory[j][i] for j in range(len(utilHistory))]
-            _, estimates = loess(x, hostL[-LOCAL_REGRESSION_BANDWIDTH:], poly_degree=1, alpha=0.6, robustify=True)
+        for i, host in enumerate(self.env.host_list):
+            host_l = [util_history[j][i] for j in range(len(util_history))]
+            _, estimates = loess(x, host_l[-LOCAL_REGRESSION_BANDWIDTH:], poly_degree=1, alpha=0.6, robustify=True)
             weights = estimates['b'].values[-1]
-            predictedCPU = weights[0] + weights[1] * (LOCAL_REGRESSION_BANDWIDTH + 1)
-            if LOCAL_REGRESSION_CPU_MULTIPLIER * predictedCPU >= 100:
-                selectedHostIDs.append(i)
-        return selectedHostIDs
+            predicted_cpu = weights[0] + weights[1] * (LOCAL_REGRESSION_BANDWIDTH + 1)
+            if LOCAL_REGRESSION_CPU_MULTIPLIER * predicted_cpu >= 100:
+                selected_host_ids.append(i)
+        return selected_host_ids
 
-    def MADSelection(self, utilHistory):
-        selectedHostIDs = []
-        for i, host in enumerate(self.env.hostlist):
-            hostL = [utilHistory[j][i] for j in range(len(utilHistory))]
-            median_hostL = np.median(np.array(hostL))
-            mad = np.median([abs(Utilhst - median_hostL) for Utilhst in hostL])
-            ThresholdCPU = 100 - LOCAL_REGRESSION_CPU_MULTIPLIER * mad
-            UtilizedCPU = host.getCPU()
-            if UtilizedCPU > ThresholdCPU:
-                selectedHostIDs.append(i)
-        return selectedHostIDs
+    def mad_selection(self, util_history):
+        selected_host_ids = []
+        for i, host in enumerate(self.env.host_list):
+            host_l = [util_history[j][i] for j in range(len(util_history))]
+            median_host_l = np.median(np.array(host_l))
+            mad = np.median([abs(util_hst - median_host_l) for util_hst in host_l])
+            threshold_cpu = 100 - LOCAL_REGRESSION_CPU_MULTIPLIER * mad
+            utilized_cpu = host.get_cpu()
+            if utilized_cpu > threshold_cpu:
+                selected_host_ids.append(i)
+        return selected_host_ids
 
-    def IQRSelection(self, utilHistory):
-        selectedHostIDs = []
-        for i, host in enumerate(self.env.hostlist):
-            hostL = [utilHistory[j][i] for j in range(len(utilHistory))]
-            q1, q3 = np.percentile(np.array(hostL), [25, 75])
-            IQR = q3 - q1
-            ThresholdCPU = 100 - LOCAL_REGRESSION_CPU_MULTIPLIER * IQR
-            UtilizedCPU = host.getCPU()
-            if UtilizedCPU > ThresholdCPU:
-                selectedHostIDs.append(i)
-        return selectedHostIDs
+    def iqr_selection(self, util_history):
+        selected_host_ids = []
+        for i, host in enumerate(self.env.host_list):
+            host_l = [util_history[j][i] for j in range(len(util_history))]
+            q1, q3 = np.percentile(np.array(host_l), [25, 75])
+            iqr = q3 - q1
+            threshold_cpu = 100 - LOCAL_REGRESSION_CPU_MULTIPLIER * iqr
+            utilized_cpu = host.get_cpu()
+            if utilized_cpu > threshold_cpu:
+                selected_host_ids.append(i)
+        return selected_host_ids
 
     # Container Selection
 
-    def RandomContainerSelection(self):
-        selectableIDs = self.env.getSelectableContainers()
-        if selectableIDs == []: return []
-        selectedCount = np.random.randint(0, len(selectableIDs)) + 1
-        selectedIDs = [];
-        while len(selectedIDs) < selectedCount:
-            idChoice = np.random.choice(selectableIDs)
-            if self.env.containerlist[idChoice]:
-                selectedIDs.append(idChoice)
-                selectableIDs.remove(idChoice)
-        return selectedIDs
+    def random_container_selection(self):
+        selectable_ids = self.env.get_selectable_containers()
+        if selectable_ids:
+            return []
+        selected_count = np.random.randint(0, len(selectable_ids)) + 1
+        selected_ids = list()
+        while len(selected_ids) < selected_count:
+            id_choice = np.random.choice(selectable_ids)
+            if self.env.container_list[id_choice]:
+                selected_ids.append(id_choice)
+                selectable_ids.remove(id_choice)
+        return selected_ids
 
-    def MMTContainerSelection(self, selectedHostIDs):
-        selectedContainerIDs = []
-        for hostID in selectedHostIDs:
-            containerIDs = self.env.getContainersOfHost(hostID)
-            ramSize = [self.env.containerlist[cid].getContainerSize() for cid in containerIDs]
-            if ramSize:
-                mmtContainerID = containerIDs[ramSize.index(min(ramSize))]
-                selectedContainerIDs.append(mmtContainerID)
-        return selectedContainerIDs
+    def mmt_container_selection(self, selected_host_ids):
+        selected_container_ids = []
+        for hostID in selected_host_ids:
+            container_ids = self.env.get_containers_of_host(hostID)
+            ram_size = [self.env.container_list[cid].get_container_size() for cid in container_ids]
+            if ram_size:
+                mmt_container_id = container_ids[ram_size.index(min(ram_size))]
+                selected_container_ids.append(mmt_container_id)
+        return selected_container_ids
 
-    def MaxUseContainerSelection(self, selectedHostIDs):
-        selectedContainerIDs = []
-        for hostID in selectedHostIDs:
-            containerIDs = self.env.getContainersOfHost(hostID)
-            if len(containerIDs):
-                containerIPS = [self.env.containerlist[cid].getBaseIPS() for cid in containerIDs]
-                selectedContainerIDs.append(containerIDs[containerIPS.index(max(containerIPS))])
-        return selectedContainerIDs
+    def max_use_container_selection(self, selected_host_ids):
+        selected_container_ids = []
+        for hostID in selected_host_ids:
+            container_ids = self.env.get_containers_of_host(hostID)
+            if len(container_ids):
+                container_ips = [self.env.container_list[cid].get_base_ips() for cid in container_ids]
+                selected_container_ids.append(container_ids[container_ips.index(max(container_ips))])
+        return selected_container_ids
 
-    def MaxCorContainerSelection(self, selectedHostIDs, utilHistoryContainer):
-        selectedContainerIDs = []
-        for hostID in selectedHostIDs:
-            containerIDs = self.env.getContainersOfHost(hostID)
-            if len(containerIDs):
-                hostL = [[utilHistoryContainer[j][cid] for j in range(len(utilHistoryContainer))] for cid in
-                         containerIDs]
-                data = pd.DataFrame(hostL)
-                data = data.T;
-                RSquared = []
+    def max_cor_container_selection(self, selected_host_ids, util_history_container):
+        selected_container_ids = []
+        for host_id in selected_host_ids:
+            container_ids = self.env.get_containers_of_host(host_id)
+            if len(container_ids):
+                host_l = [[util_history_container[j][cid] for j in range(len(util_history_container))] for cid in
+                          container_ids]
+                data = pd.DataFrame(host_l)
+                data = data.T
+                r_squared = []
                 for i in range(data.shape[1]):
                     x = np.array(data.drop(data.columns[i], axis=1))
                     y = np.array(data.iloc[:, i])
-                    X1 = np.c_[x, np.ones(x.shape[0])]
-                    y_pred = np.dot(X1,
-                                    np.dot(np.linalg.pinv(np.dot(np.transpose(X1), X1)), np.dot(np.transpose(X1), y)))
+                    x1 = np.c_[x, np.ones(x.shape[0])]
+                    y_pred = np.dot(x1,
+                                    np.dot(np.linalg.pinv(np.dot(np.transpose(x1), x1)), np.dot(np.transpose(x1), y)))
                     corr = np.corrcoef(np.column_stack((y, y_pred)), rowvar=False)
-                    RSquared.append(corr[0][1] if not np.isnan(corr).any() else 0)
-                selectedContainerIDs.append(containerIDs[RSquared.index(max(RSquared))])
-        return selectedContainerIDs
+                    r_squared.append(corr[0][1] if not np.isnan(corr).any() else 0)
+                selected_container_ids.append(container_ids[r_squared.index(max(r_squared))])
+        return selected_container_ids
 
     # Container placement
-
-    def RandomPlacement(self, containerIDs):
+    def random_placement(self, container_ids):
         decision = []
-        for cid in containerIDs:
-            decision.append((cid, np.random.randint(0, len(self.env.hostlist))))
+        for cid in container_ids:
+            decision.append((cid, np.random.randint(0, len(self.env.host_list))))
         return decision
 
-    def FirstFitPlacement(self, containerIDs):
-        decision = []
-        for cid in containerIDs:
-            for hostID in range(len(self.env.hostlist)):
-                if self.env.getPlacementPossible(cid, hostID):
-                    decision.append((cid, hostID));
+    def first_fit_placement(self, container_ids):
+        decision = list()
+        for cid in container_ids:
+            for hostID in range(len(self.env.host_list)):
+                if self.env.get_placement_possible(cid, hostID):
+                    decision.append((cid, hostID))
                     break
         return decision
 
-    def LeastFullPlacement(self, containerIDs):
+    def least_full_placement(self, container_ids):
         decision = []
-        hostIPSs = [(self.env.hostlist[i].getCPU(), i) for i in range(len(self.env.hostlist))]
-        for cid in containerIDs:
-            leastFullHost = min(hostIPSs)
-            decision.append((cid, leastFullHost[1]))
-            if len(hostIPSs) > 1:
-                hostIPSs.remove(leastFullHost)
+        host_ipss = [(self.env.host_list[i].get_cpu(), i) for i in range(len(self.env.host_list))]
+        for cid in container_ids:
+            least_full_host = min(host_ipss)
+            decision.append((cid, least_full_host[1]))
+            if len(host_ipss) > 1:
+                host_ipss.remove(least_full_host)
         return decision
 
-    def MaxFullPlacement(self, containerIDs):
+    def max_full_placement(self, container_ids):
         decision = []
-        hostIPSs = [(self.env.hostlist[i].getCPU(), i) for i in range(len(self.env.hostlist))]
-        for cid in containerIDs:
-            maxFullHost = max(hostIPSs)
-            decision.append((cid, maxFullHost[1]))
-            if len(hostIPSs) > 1:
-                hostIPSs.remove(leastFullHost)
+        host_ipss = [(self.env.host_list[i].get_cpu(), i) for i in range(len(self.env.host_list))]
+        for cid in container_ids:
+            max_full_host = max(host_ipss)
+            decision.append((cid, max_full_host[1]))
+            if len(host_ipss) > 1:
+                host_ipss.remove(max_full_host)
         return decision
