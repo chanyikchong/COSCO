@@ -9,9 +9,8 @@ import numpy as np
 import pandas as pd
 
 from simulator.workload.Workload import Workload
-from simulator.container.IPSModels.IPSMBitbrain import IPSMBitbrain
-from simulator.container.RAMModels.RMBitbrain import RMBitbrain
-from simulator.container.DiskModels.DMBitbrain import DMBitbrain
+from simulator.container import IPSMBitbrain, RMBitbrain, DMBitbrain
+
 
 warnings.simplefilter("ignore")
 

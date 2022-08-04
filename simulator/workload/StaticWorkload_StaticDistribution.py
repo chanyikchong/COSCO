@@ -1,9 +1,7 @@
 import numpy as np
 
 from simulator.workload.Workload import Workload
-from simulator.container.IPSModels.IPSMConstant import IPSMConstant
-from simulator.container.RAMModels.RMConstant import RMConstant
-from simulator.container.DiskModels.DMConstant import DMConstant
+from simulator.container import IPSMConstant, RMConstant, DMConstant
 
 
 class SWSD(Workload):
