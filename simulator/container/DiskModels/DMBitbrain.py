@@ -1,4 +1,4 @@
-from .DM import *
+from .DM import DM
 
 
 class DMBitbrain(DM):
@@ -9,6 +9,6 @@ class DMBitbrain(DM):
         self.write_list = write_list
 
     def disk(self):
-        read_list_count = (self.container.env.interval - self.container.startAt) % len(self.read_list)
-        write_list_count = (self.container.env.interval - self.container.startAt) % len(self.write_list)
+        read_list_count = (self.container.env.interval - self.container.start_at) % len(self.read_list)
+        write_list_count = (self.container.env.interval - self.container.start_at) % len(self.write_list)
         return self.constant_size, self.read_list[read_list_count], self.write_list[write_list_count]

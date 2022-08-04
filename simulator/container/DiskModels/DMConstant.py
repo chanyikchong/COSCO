@@ -1,4 +1,4 @@
-from .DM import *
+from .DM import DM
 
 
 class DMConstant(DM):
