@@ -11,7 +11,7 @@ class Host:
         self.bw_cap = bw
         self.latency = latency
         self.power_model = power_model
-        self.power_model.allocHost(self)
+        self.power_model.alloc_host(self)
         self.power_model.host = self
         self.env = environment
 
@@ -19,10 +19,10 @@ class Host:
         return self.power_model.power()
 
     def get_power_max(self):
-        return self.power_model.powerFromCPU(100)
+        return self.power_model.power_from_cpu(100)
 
     def get_power_from_ips(self, ips):
-        return self.power_model.powerFromCPU(min(100, 100 * (ips / self.ips_cap)))
+        return self.power_model.power_from_cpu(min(100, 100 * (ips / self.ips_cap)))
 
     def get_cpu(self):
         ips = self.get_apparent_ips()
