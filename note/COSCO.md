@@ -49,8 +49,9 @@ def initalizeEnvironment(environment, logger)
     scheduler = GOBIScheduler(model_name)  # GOBIScheduler('energy_latency_'+str(HOSTS))
 ```
 初始化分配器
+
 ```python
-    hostlist = datacenter.generateHosts()
+    hostlist = datacenter.generate_hosts()
 ```
 初始化Host节点，datacenter根据是否使用env决定，Simulator环境下为固定Host设置，Framework环境下根据实际Host参数设置
 ```python
@@ -64,12 +65,14 @@ def initalizeEnvironment(environment, logger)
 初始化环境和数据记录类<br>
 
 完成初始化后需要先执行一步模拟，包括生成containers和初始任务调度。
+
 ```python
-    newcontainerinfos = workload.generateNewContainers(env.interval)
+    newcontainerinfos = workload.generate_new_containers(env.interval)
 ```
 生成containers的信息tuple组成的list，`env.interval`是时间标签ID，用于记录container的生成时间区间。
+
 ```python
-    deployed = env.addContainersInit(newcontainerinfos)
+    deployed = env.add_containers_init(newcontainerinfos)
 ```
 根据containers的信息tuple生成container对象并储存在`env.containerlist`中，deployed为需要schedule的container IDs。
 ```python
@@ -78,12 +81,14 @@ def initalizeEnvironment(environment, logger)
     schedulingTime = time() - start
 ```
 scheduler根据deployed的ID list给出decision。decision的形式是(container_id, host_id)
+
 ```python
-migrations = env.allocateInit(decision)
+migrations = env.allocate_init(decision)
 ```
 根据decision给出初始化的migration。
+
 ```python
-    workload.updateDeployedContainers(env.getCreationIDs(migrations, deployed))
+    workload.update_deployed_containers(env.get_creation_ids(migrations, deployed))
 ```
 更新workload里container的deploy状态
 
@@ -93,10 +98,11 @@ migrations = env.allocateInit(decision)
 保存当前interval的信息
 
 ## `stepSimulation`
+
 ```python
 def stepSimulation(workload, scheduler, env, stats):
-    newcontainerinfos = workload.generateNewContainers(env.interval)
-    deployed, destroyed = env.addContainers(newcontainerinfos)
+    newcontainerinfos = workload.generate_new_containers(env.interval)
+    deployed, destroyed = env.add_containers(newcontainerinfos)
 ```
 生成新的container对象，并将已完成的containerdestroy。
 ```python
@@ -104,13 +110,14 @@ def stepSimulation(workload, scheduler, env, stats):
     decision = scheduler.filter_placement(scheduler.placement(selected + deployed))
 ```
 用scheduler选择需要migrate的container，为需要migrate和新生成deploy的container决定allocation。
+
 ```python
-    migrations = env.simulationStep(decision) 
+    migrations = env.simulation_step(decision) 
 ```
 
 ```python
-    workload.updateDeployedContainers(env.getCreationIDs(migrations, deployed))
-    stats.save_stats(deployed, migrations, [], deployed, decision, schedulingTime)
+    workload.update_deployed_containers(env.get_creation_ids(migrations, deployed))
+stats.save_stats(deployed, migrations, [], deployed, decision, schedulingTime)
 ```
 更新workload里container的deploy状态，并保存当前interval的信息。
 
@@ -161,21 +168,25 @@ class Workload:
 ```
 creation_id记录container的ID，createdContainers记录所有生成的containers，deployedContainers记录对应ID的container是否已经deploy了，用bool表示。
 ### `getUndeployedContainers`
+
 ```python
     def getUndeployedContainers(self):
-        undeployed = []
-        for i, deployed in enumerate(self.deployedContainers):
-            if not deployed:
-                undeployed.append(self.createdContainers[i])
-        return undeployed
+
+
+    undeployed = []
+for i, deployed in enumerate(self.deployed_containers):
+    if not deployed:
+        undeployed.append(self.created_containers[i])
+return undeployed
 ```
 获取没有被deploy的container，通过遍历`self.deployedContainers`获取
 ### `updateDeployedContainers`
+
 ```python
     def updateDeployedContainers(self, creationIDs):
-        for cid in creationIDs:
-            assert not self.deployedContainers[cid]
-            self.deployedContainers[cid] = True
+    for cid in creationIDs:
+        assert not self.deployed_containers[cid]
+        self.deployed_containers[cid] = True
 ```
 更新container的deploy状态
 
@@ -194,14 +205,17 @@ creation_id记录container的ID，createdContainers记录所有生成的containe
 根据host_id和decision确定本次migration中有哪些container需要migration到当前host。
 
 ### `getMigrationFromHost`
+
 ```python
     def getMigrationFromHost(self, hostID, decision):
-        containerIDs = []
-        for (cid, _) in decision:
-            hid = self.env.getContainerByID(cid).getHostID()
-            if hid == hostID:
-                containerIDs.append(cid)
-        return containerIDs
+
+
+    containerIDs = []
+for (cid, _) in decision:
+    hid = self.env.get_container_by_id(cid).get_host_id()
+    if hid == hostID:
+        containerIDs.append(cid)
+return containerIDs
 ```
 获取需要从host ID转移的container ID。
 
@@ -257,16 +271,18 @@ class Stats:
 
 ```python
     def saveWorkloadInfo(self, deployed, migrations):
-        workloadinfo = dict()
-        workloadinfo['interval'] = self.env.interval
-        workloadinfo['totalcontainers'] = len(self.workload.createdContainers)
-        if self.workload_info != []:
-            workloadinfo['newcontainers'] = workloadinfo['totalcontainers'] - self.workload_info[-1]['totalcontainers']
-        else:
-            workloadinfo['newcontainers'] = workloadinfo['totalcontainers']
-        workloadinfo['deployed'] = len(deployed)
-        workloadinfo['migrations'] = len(migrations)
-        workloadinfo['inqueue'] = len(self.workload.getUndeployedContainers())
+
+
+    workloadinfo = dict()
+workloadinfo['interval'] = self.env.interval
+workloadinfo['totalcontainers'] = len(self.workload.created_containers)
+if self.workload_info != []:
+    workloadinfo['newcontainers'] = workloadinfo['totalcontainers'] - self.workload_info[-1]['totalcontainers']
+else:
+    workloadinfo['newcontainers'] = workloadinfo['totalcontainers']
+workloadinfo['deployed'] = len(deployed)
+workloadinfo['migrations'] = len(migrations)
+workloadinfo['inqueue'] = len(self.workload.get_undeployed_containers())
 ```
 新增加的container通过相减获得。队列为undeploy container。
 
@@ -281,19 +297,23 @@ class Stats:
 保存active的container，从env.containerlist中获取。
 
 ### `saveAllContainerInfo`
+
 ```python
     def saveAllContainerInfo(self):
-        containerinfo = dict()
-        allCreatedContainers = [self.env.getContainerByCID(cid) for cid in list(np.where(self.workload.deployedContainers)[0])]
+
+
+    containerinfo = dict()
+allCreatedContainers = [self.env.get_container_by_cid(cid) for cid in
+                        list(np.where(self.workload.deployed_containers)[0])]
 ```
 allCreatedContainers包含active和destroy的containers，不包含undeployed的containers。
 
 ```python
         if self.datacenter.__class__.__name__ == 'Datacenter':
-            containerinfo['application'] = [self.env.getContainerByCID(cid).application for cid in
-                                            list(np.where(self.workload.deployedContainers)[0])]
-        # 保存信息
-        self.all_container_info.append(containerinfo)
+containerinfo['application'] = [self.env.get_container_by_cid(cid).application for cid in
+                                list(np.where(self.workload.deployed_containers)[0])]
+# 保存信息
+self.all_container_info.append(containerinfo)
 ```
 对于Datacenter类额外保存application信息，
 
@@ -301,29 +321,31 @@ allCreatedContainers包含active和destroy的containers，不包含undeployed的
 
 ```python
     def saveMetrics(self, destroyed, migrations):
-        metrics = dict()
-        metrics['interval'] = self.env.interval
-        metrics['numdestroyed'] = len(destroyed)
-        metrics['nummigrations'] = len(migrations)
-        metrics['energy'] = [host.getPower() * self.env.intervaltime for host in self.env.hostlist]  # 每个host在当前interval的消耗
-        metrics['energytotalinterval'] = np.sum(metrics['energy'])  # 总消耗
-        metrics['energypercontainerinterval'] = np.sum(
-            metrics['energy']) / self.env.getNumActiveContainers()  # 当前interval每个active container的平均energy消耗。
-        metrics['responsetime'] = [c.totalExecTime + c.totalMigrationTime for c in
-                                   destroyed]  # 当前interval destroy的container的response time。
-        metrics['avgresponsetime'] = np.average(metrics['responsetime']) if len(
-            destroyed) > 0 else 0  # 当前interval的平均response time
-        metrics['migrationtime'] = [c.totalMigrationTime for c in destroyed]  # 当前interval destroy的container的migration time
-        metrics['avgmigrationtime'] = np.average(metrics['migrationtime']) if len(destroyed) > 0 else 0  # 平均migration time
-        metrics['slaviolations'] = len(np.where([c.destroyAt > c.sla for c in destroyed]))
-        SLA
-        violation的数目
-        metrics['slaviolationspercentage'] = metrics['slaviolations'] * 100.0 / len(destroyed) if len(
-            destroyed) > 0 else 0  # SLA violation比例
-        metrics['waittime'] = [c.startAt - c.createAt for c in destroyed]  # 每个destroy container的等待时间
-        metrics['energytotalinterval_pred'], metrics[
-            'avgresponsetime_pred'] = self.run_simulation_GOBI()  # 用GOBI估计的interval的总energy和平均response time。
-        self.metrics.append(metrics)
+
+
+metrics = dict()
+metrics['interval'] = self.env.interval
+metrics['numdestroyed'] = len(destroyed)
+metrics['nummigrations'] = len(migrations)
+metrics['energy'] = [host.get_power() * self.env.interval_time for host in self.env.host_list]  # 每个host在当前interval的消耗
+metrics['energytotalinterval'] = np.sum(metrics['energy'])  # 总消耗
+metrics['energypercontainerinterval'] = np.sum(
+    metrics['energy']) / self.env.get_num_active_containers()  # 当前interval每个active container的平均energy消耗。
+metrics['responsetime'] = [c.total_exec_time + c.total_migration_time for c in
+                           destroyed]  # 当前interval destroy的container的response time。
+metrics['avgresponsetime'] = np.average(metrics['responsetime']) if len(
+    destroyed) > 0 else 0  # 当前interval的平均response time
+metrics['migrationtime'] = [c.total_migration_time for c in destroyed]  # 当前interval destroy的container的migration time
+metrics['avgmigrationtime'] = np.average(metrics['migrationtime']) if len(destroyed) > 0 else 0  # 平均migration time
+metrics['slaviolations'] = len(np.where([c.destroy_at > c.sla for c in destroyed]))
+SLA
+violation的数目
+metrics['slaviolationspercentage'] = metrics['slaviolations'] * 100.0 / len(destroyed) if len(
+    destroyed) > 0 else 0  # SLA violation比例
+metrics['waittime'] = [c.start_at - c.create_at for c in destroyed]  # 每个destroy container的等待时间
+metrics['energytotalinterval_pred'], metrics[
+    'avgresponsetime_pred'] = self.run_simulation_GOBI()  # 用GOBI估计的interval的总energy和平均response time。
+self.metrics.append(metrics)
 ```
 计算performance信息。
 
@@ -331,16 +353,18 @@ allCreatedContainers包含active和destroy的containers，不包含undeployed的
 
 ```python
     def saveSchedulerInfo(self, selectedcontainers, decision, schedulingtime):
-        schedulerinfo = dict()
-        schedulerinfo['interval'] = self.env.interval
-        schedulerinfo['selection'] = selectedcontainers
-        schedulerinfo['decision'] = decision  # scheduler 给出的decision
-        schedulerinfo['schedule'] = [(c.id, c.getHostID()) if c else (None, None) for c in
-                                     self.env.containerlist]  # 实际可执行的migration
-        schedulerinfo['schedulingtime'] = schedulingtime
-        if self.datacenter.__class__.__name__ == 'Datacenter':
-            schedulerinfo['migrationTime'] = self.env.intervalAllocTimings[-1]
-        self.scheduler_info.append(schedulerinfo)
+
+
+    schedulerinfo = dict()
+schedulerinfo['interval'] = self.env.interval
+schedulerinfo['selection'] = selectedcontainers
+schedulerinfo['decision'] = decision  # scheduler 给出的decision
+schedulerinfo['schedule'] = [(c.id, c.get_host_id()) if c else (None, None) for c in
+                             self.env.container_list]  # 实际可执行的migration
+schedulerinfo['schedulingtime'] = schedulingtime
+if self.datacenter.__class__.__name__ == 'Datacenter':
+    schedulerinfo['migrationTime'] = self.env.intervalAllocTimings[-1]
+self.scheduler_info.append(schedulerinfo)
 ```
 
 ### `generateDatasetWithInterval`
@@ -455,19 +479,21 @@ x轴是interval，y轴是host/container的数据。
 保存特定数据list到dataframe。
 
 ### `run_simulation_GOBI`
+
 ```python
     def run_simulation_GOBI(self):
-        host_alloc = []
-        container_alloc = [-1] * len(self.env.hostlist)
-        for i in range(len(self.env.hostlist)):
-            host_alloc.append([])
+    host_alloc = []
+    container_alloc = [-1] * len(self.env.host_list)
+    for i in range(len(self.env.host_list)):
+        host_alloc.append([])
 ```
 `host_alloc`保存host需要执行的containers
+
 ```python
-        for c in self.env.containerlist:
-            if c and c.getHostID() != -1:
-                host_alloc[c.getHostID()].append(c.id)
-                container_alloc[c.id] = c.getHostID()
+        for c in self.env.container_list:
+if c and c.get_host_id() != -1:
+    host_alloc[c.get_host_id()].append(c.id)
+    container_alloc[c.id] = c.get_host_id()
 ```
 `container_alloc`保存container分配的host
 ```python
@@ -475,22 +501,24 @@ x轴是interval，y轴是host/container的数据。
         decision = self.simulated_scheduler.filter_placement(self.simulated_scheduler.placement(selected))
 ```
 标准run scheduler步骤
+
 ```python
         for cid, hid in decision:
-            if self.env.getPlacementPossible(cid, hid) and container_alloc[cid] != -1:
-                host_alloc[container_alloc[cid]].remove(cid)
-                host_alloc[hid].append(cid)
+    if self.env.get_placement_possible(cid, hid) and container_alloc[cid] != -1:
+        host_alloc[container_alloc[cid]].remove(cid)
+        host_alloc[hid].append(cid)
 ```
 检查migration可行性，并更新host_alloc
+
 ```python
         energy_total_interval_pred = 0
-        for hid, cids in enumerate(host_alloc):
-            ips = 0
-            for cid in cids:
-                ips += self.env.containerlist[cid].getApparentIPS()
-            energy_total_interval_pred += self.env.hostlist[hid].getPowerFromIPS(ips)
-        return energy_total_interval_pred * self.env.intervaltime, max(0, np.mean(
-            [metric_d['avg_response_time'] for metric_d in self.metrics[-5:]]))
+for hid, cids in enumerate(host_alloc):
+    ips = 0
+    for cid in cids:
+        ips += self.env.container_list[cid].get_apparent_ips()
+    energy_total_interval_pred += self.env.host_list[hid].get_power_from_ips(ips)
+return energy_total_interval_pred * self.env.interval_time, max(0, np.lam(
+    [metric_d['avg_response_time'] for metric_d in self.metrics[-5:]]))
 ```
 计算interval的energy，average response time取最近5次模拟的均值
 
@@ -503,6 +531,7 @@ env = Simulator(TOTAL_POWER, ROUTER_BW, scheduler, CONTAINERS, INTERVAL_TIME, ho
 ```
 ## Simulator类
 ### `__init__`
+
 ```python
 class Simulator:
     # Total power in watt
@@ -510,148 +539,173 @@ class Simulator:
     # Interval Time in seconds
     def __init__(self, TotalPower, RouterBw, Scheduler, ContainerLimit, IntervalTime, hostinit):
         ...
-        self.scheduler.setEnvironment(self)
+        self.scheduler.set_environment(self)
         self.addHostlistInit(hostinit)
 ```
 包含一个模拟的scheduler。
 
 ### `getCreationIDs`
+
 ```python
     def getCreationIDs(self, migrations, containerIDs):
-        creationIDs = []
-        for decision in migrations:
-            if decision[0] in containerIDs:
-                creationIDs.append(self.containerlist[decision[0]].creationID)
-        return creationIDs
+
+
+    creationIDs = []
+for decision in migrations:
+    if decision[0] in containerIDs:
+        creationIDs.append(self.container_list[decision[0]].creation_id)
+return creationIDs
 ```
 获得migration中实际container的ID
 
 ### `getNumActiveContainers`
+
 ```python
     def getNumActiveContainers(self):
-        num = 0
-        for container in self.containerlist:
-            if container and container.active: 
-                num += 1
-        return num
+    num = 0
+    for container in self.container_list:
+        if container and container.active:
+            num += 1
+    return num
 ```
 遍历containerlist里的container类，通过container类的active参数获得active的container数目。
 
 ### `getContainerByID`
+
 ```python
     def getContainerByID(self, containerID):
-        return self.containerlist[containerID]
+    return self.container_list[containerID]
 ```
 container的ID即为containerlist的位置，通过ID获取container对象
 
 ### `getPlacementPossible`
+
 ```python
     def getPlacementPossible(self, containerID, hostID):
-        container = self.containerlist[containerID]
-        host = self.hostlist[hostID]
-        ipsreq = container.getBaseIPS()
-        ramsizereq, ramreadreq, ramwritereq = container.getRAM()
-        disksizereq, diskreadreq, diskwritereq = container.getDisk()
-        ipsavailable = host.getIPSAvailable()
-        ramsizeav, ramreadav, ramwriteav = host.getRAMAvailable()
-        disksizeav, diskreadav, diskwriteav = host.getDiskAvailable()
-        return (ipsreq <= ipsavailable and \
-                ramsizereq <= ramsizeav and \
-                # ramreadreq <= ramreadav and \
-                # ramwritereq <= ramwriteav and \
-                disksizereq <= disksizeav \
-                # diskreadreq <= diskreadav and \
-                # diskwritereq <= diskwriteav
-                )
+
+
+container = self.container_list[containerID]
+host = self.host_list[hostID]
+ipsreq = container.get_base_ips()
+ramsizereq, ramreadreq, ramwritereq = container.get_ram()
+disksizereq, diskreadreq, diskwritereq = container.get_disk()
+ipsavailable = host.get_ips_available()
+ramsizeav, ramreadav, ramwriteav = host.get_ram_available()
+disksizeav, diskreadav, diskwriteav = host.get_disk_available()
+return (ipsreq <= ipsavailable and
+        ramsizereq <= ramsizeav and
+        # ramreadreq <= ramreadav and \
+        # ramwritereq <= ramwriteav and \
+        disksizereq <= disksizeav
+        # diskreadreq <= diskreadav and \
+        # diskwritereq <= diskwriteav
+        )
 ```
 获取container的base IPS，RAM信息，DISK信息。获取host的可用IPS，可用RAM，可用DISK。返回Boolean（container需要的是否超过host的）
 
 ### `addHostlistInit`
+
 ```python
     def addHostlistInit(self, hostList):
-        assert len(hostList) == self.hostlimit
-        for IPS, RAM, Disk, Bw, Latency, Powermodel in hostList:
-            self.addHostInit(IPS, RAM, Disk, Bw, Latency, Powermodel)
+
+
+    assert len(hostList) == self.host_limit
+for IPS, RAM, Disk, Bw, Latency, Powermodel in hostList:
+    self.add_host_init(IPS, RAM, Disk, Bw, Latency, Powermodel)
 ```
 根据host list生成对象。
 
 ### `addHostInit`
+
 ```python
     def addHostInit(self, IPS, RAM, Disk, Bw, Latency, Powermodel):
-        assert len(self.hostlist) < self.hostlimit
-        host = Host(len(self.hostlist), IPS, RAM, Disk, Bw, Latency, Powermodel, self)
-        self.hostlist.append(host)
+
+
+    assert len(self.host_list) < self.host_limit
+host = Host(len(self.host_list), IPS, RAM, Disk, Bw, Latency, Powermodel, self)
+self.host_list.append(host)
 ```
 根据host的tuple信息生成host对象。
 
 ### `addContainersInit`
 初始化步骤的增加container
+
 ```python
     def addContainersInit(self, containerInfoListInit):
-        self.interval += 1
-        deployed = self.addContainerListInit(containerInfoListInit)
-        return deployed
+    self.interval += 1
+    deployed = self.add_container_list_init(containerInfoListInit)
+    return deployed
 ```
 入参为container信息tuple形成的list。interval ID增加一，返回deploy的container对象的ID list。
 
 ### `addContainerListInit`
+
 ```python
     def addContainerListInit(self, containerInfoList):
-        deployed = containerInfoList[:min(len(containerInfoList), self.containerlimit - self.getNumActiveContainers())]
+
+
+    deployed = containerInfoList[:min(len(containerInfoList), self.container_limit - self.get_num_active_containers())]
 ```
 入参为container信息tuple形成的list（新生成的containers）。选择前$min(len(list),\space container上限-active数)$个container deploy。
+
 ```python
         deployedContainers = []
-        for CreationID, CreationInterval, IPSModel, RAMModel, DiskModel in deployed:
-            dep = self.addContainerInit(CreationID, CreationInterval, IPSModel, RAMModel, DiskModel)
-            deployedContainers.append(dep)
+for CreationID, CreationInterval, IPSModel, RAMModel, DiskModel in deployed:
+    dep = self.add_container_init(CreationID, CreationInterval, IPSModel, RAMModel, DiskModel)
+    deployedContainers.append(dep)
 ```
 运用container tuple的信息生成container对象并加入之`self.containerlist`。
+
 ```python
-        self.containerlist += [None] * (self.containerlimit - len(self.containerlist))
-        return [container.id for container in deployedContainers]
+        self.container_list += [None] * (self.container_limit - len(self.container_list))
+return [container.id for container in deployedContainers]
 ```
 通过添加None把`self.containerlist`补齐至`self.containerlimit`的长度。最终返回deployed的container对象的ID list。
 
 
 ### `addContainerInit`
+
 ```python
     def addContainerInit(self, CreationID, CreationInterval, IPSModel, RAMModel, DiskModel):
-        container = Container(len(self.containerlist), CreationID, CreationInterval, IPSModel, RAMModel, DiskModel,
-                              self, HostID=-1)
-        self.containerlist.append(container)
-        return container
+    container = Container(len(self.container_list), CreationID, CreationInterval, IPSModel, RAMModel, DiskModel,
+                          self, HostID=-1)
+    self.container_list.append(container)
+    return container
 ```
 创建Container对象
 
 ### `allocateInit`
+
 ```python
     def allocateInit(self, decision):
-        migrations = []
-        routerBwToEach = self.totalbw / len(decision)
+    migrations = []
+    routerBwToEach = self.total_bw / len(decision)
 ```
 路由器可平均分配bw给decision里的每个container。
+
 ```python
         for (cid, hid) in decision:
-            container = self.getContainerByID(cid)
-            assert container.getHostID() == -1
+container = self.get_container_by_id(cid)
+assert container.get_host_id() == -1
 ```
 当前container没有被分配过到任何host。
+
 ```python
-            numberAllocToHost = len(self.scheduler.getMigrationToHost(hid, decision))
-            allocbw = min(self.getHostByID(hid).bwCap.downlink / numberAllocToHost, routerBwToEach)
+            numberAllocToHost = len(self.scheduler.get_migration_to_host(hid, decision))
+allocbw = min(self.get_host_by_id(hid).bw_cap.downlink / numberAllocToHost, routerBwToEach)
 ```
 获取需要migrate到当前host的container数量。<br>
 根据host的downlink bw和需要migrate的数量，获得该host可以平均分配的bw量。最后取$min$(host平均带宽, 路由器平均带宽)为最终允许带宽。
+
 ```python
-            if self.getPlacementPossible(cid, hid):
-                if container.getHostID() != hid:
-                    migrations.append((cid, hid))
-                container.allocateAndExecute(hid, allocbw)
-            # destroy pointer to this unallocated container as book-keeping is done by workload model
-            else:
-                self.containerlist[cid] = None
-        return migrations
+            if self.get_placement_possible(cid, hid):
+if container.get_host_id() != hid:
+    migrations.append((cid, hid))
+container.allocate_execute(hid, allocbw)
+# destroy pointer to this unallocated container as book-keeping is done by workload model
+else:
+self.container_list[cid] = None
+return migrations
 ```
 若符合migration条件则执行，且container对象转移并执行，将decision加入migration的list。返回实际执行的decision即migration。
 
@@ -659,89 +713,104 @@ container的ID即为containerlist的位置，通过ID获取container对象
 
 ### `addContainers`
 模拟阶段的增加container
+
 ```python
     self.interval += 1
-        destroyed = self.destroyCompletedContainers()
-        deployed = self.addContainerList(newContainerList)
-        return deployed, destroyed
+destroyed = self.destroy_completed_containers()
+deployed = self.add_container_list(newContainerList)
+return deployed, destroyed
 ```
 检查env中已完成的container并destroy，用新的container信息生成新的container对象。返回destroy的container对象和deploy的container ID。
 
 ### `addContainerList`
+
 ```python
     def addContainerList(self, containerInfoList):
-        deployed = containerInfoList[:min(len(containerInfoList), self.containerlimit - self.getNumActiveContainers())]
-        deployedContainers = []
-        for CreationID, CreationInterval, IPSModel, RAMModel, DiskModel in deployed:
-            dep = self.addContainer(CreationID, CreationInterval, IPSModel, RAMModel, DiskModel)
-            deployedContainers.append(dep)
-        return [container.id for container in deployedContainers]
+
+
+deployed = containerInfoList[:min(len(containerInfoList), self.container_limit - self.get_num_active_containers())]
+deployedContainers = []
+for CreationID, CreationInterval, IPSModel, RAMModel, DiskModel in deployed:
+    dep = self.add_container(CreationID, CreationInterval, IPSModel, RAMModel, DiskModel)
+    deployedContainers.append(dep)
+return [container.id for container in deployedContainers]
 ```
 生成container对象，并返回可以deploy的container ID。与`addContainerListInit`相同。
 
 ### `addContainer`
+
 ```python
     def addContainer(self, CreationID, CreationInterval, IPSModel, RAMModel, DiskModel):
-        for i, c in enumerate(self.containerlist):
-            if c == None or not c.active:
-                container = Container(i, CreationID, CreationInterval, IPSModel, RAMModel, DiskModel, self, HostID=-1)
-                self.containerlist[i] = container
-                return container
+    for i, c in enumerate(self.container_list):
+        if c == None or not c.active:
+            container = Container(i, CreationID, CreationInterval, IPSModel, RAMModel, DiskModel, self, HostID=-1)
+            self.container_list[i] = container
+            return container
 ```
 检查env.containerlist中是否有空位，若有则将新的container放入。与`addContainerInit`相似
 
 ### `destroyCompletedContainers`
+
 ```python
     def destroyCompletedContainers(self):
-        destroyed = []
-        for i, container in enumerate(self.containerlist):
-            if container and container.getBaseIPS() == 0:
-                container.destroy()
-                self.containerlist[i] = None
-                self.inactiveContainers.append(container)
-                destroyed.append(container)
-        return destroyed
+
+
+destroyed = []
+for i, container in enumerate(self.container_list):
+    if container and container.get_base_ips() == 0:
+        container.destroy()
+        self.container_list[i] = None
+        self.inactive_containers.append(container)
+        destroyed.append(container)
+return destroyed
 ```
 若container无剩余IPS则需要destroy，重置env的containerlist，记录destroy的container。返回destroy的container
 
 ### `simulateionStep`
+
 ```python
     def simulationStep(self, decision):
-        routerBwToEach = self.totalbw / len(decision) if len(decision) > 0 else self.totalbw
-        migrations = []
-        containerIDsAllocated = []
-        for (cid, hid) in decision:
-            container = self.getContainerByID(cid)
-            currentHostID = self.getContainerByID(cid).getHostID()
-            currentHost = self.getHostByID(currentHostID)
-            targetHost = self.getHostByID(hid)
+
+
+routerBwToEach = self.total_bw / len(decision) if len(decision) > 0 else self.total_bw
+migrations = []
+containerIDsAllocated = []
+for (cid, hid) in decision:
+    container = self.get_container_by_id(cid)
+    currentHostID = self.get_container_by_id(cid).get_host_id()
+    currentHost = self.get_host_by_id(currentHostID)
+    targetHost = self.get_host_by_id(hid)
 ```
 获取container，当前host，目标host对象
+
 ```python
-            migrateFromNum = len(self.scheduler.getMigrationFromHost(currentHostID, decision))
-            migrateToNum = len(self.scheduler.getMigrationToHost(hid, decision))
-            allocbw = min(targetHost.bwCap.downlink / migrateToNum, currentHost.bwCap.uplink / migrateFromNum,
-                          routerBwToEach)
+            migrateFromNum = len(self.scheduler.get_migration_from_host(currentHostID, decision))
+migrateToNum = len(self.scheduler.get_migration_to_host(hid, decision))
+allocbw = min(targetHost.bw_cap.downlink / migrateToNum, currentHost.bw_cap.uplink / migrateFromNum,
+              routerBwToEach)
 ```
 根据当前host的migrate数量，目标host的migrate数量，计算带宽。取目标host平均值，当前host平均值，总路由带宽的平均值的最小值。
+
 ```python
-            if hid != self.containerlist[cid].hostid and self.getPlacementPossible(cid, hid):
-                migrations.append((cid, hid))
-                container.allocateAndExecute(hid, allocbw)
-                containerIDsAllocated.append(cid)
+            if hid != self.container_list[cid].host_id and self.get_placement_possible(cid, hid):
+migrations.append((cid, hid))
+container.allocate_execute(hid, allocbw)
+containerIDsAllocated.append(cid)
 ```
 若该container需要migrate且可执行，则转移并执行，并记录其ID。
+
 ```python
         # destroy pointer to unallocated containers as book-keeping is done by workload model
-        for (cid, hid) in decision:
-            if self.containerlist[cid].hostid == -1: self.containerlist[cid] = None
+for (cid, hid) in decision:
+    if self.container_list[cid].host_id == -1: self.container_list[cid] = None
 ```
 若无法转移和安置成功则重置containerlist对应位置
+
 ```python
-        for i, container in enumerate(self.containerlist):
-            if container and i not in containerIDsAllocated:
-                container.execute(0)
-        return migrations
+        for i, container in enumerate(self.container_list):
+    if container and i not in containerIDsAllocated:
+        container.execute(0)
+return migrations
 ```
 若container没有转移则直接执行container的execute（设置lastMigrationTime为0）。返回转移list
 
@@ -785,11 +854,12 @@ class BWGD2(Workload):
             # download data
 ```
 继承`Workload`类，以container数目的期望和方差为入参，若无数据路径则会下载。
+
 ```python
         self.dataset_path = dataset_path
-        self.disk_sizes = [1, 2, 3]
-        self.meanSLA, self.sigmaSLA = 20, 3
-        self.possible_indices = []
+self.disk_sizes = [1, 2, 3]
+self.mean_sla, self.sigma_sla = 20, 3
+self.possible_indices = []
 ```
 container硬盘数目list，SLA的均值与方差，`self.possible_indices`记录数据集中可以用作生成container的数据
 ```python
@@ -802,17 +872,19 @@ container硬盘数目list，SLA的均值与方差，`self.possible_indices`记�
 Bitbrain数据集中共有500台VM数据，每个VM有8344个时间数据。若index=10的时间里，`500 < CPU_usage*ips_multiplier < 3000`则为可用作生成的container
 
 ### `generateNewContainers`
+
 ```python
     def generateNewContainers(self, interval):
-        workloadlist = []
-        for i in range(max(1, int(gauss(self.mean, self.sigma)))):
+    workloadlist = []
+    for i in range(max(1, int(gauss(self.lam, self.sigma)))):
 ```
 interval，作为时间戳入参，记录container生成时间
+
 ```python
             CreationID = self.creation_id
-            index = self.possible_indices[randint(0, len(self.possible_indices) - 1)]
-            df = pd.read_csv(self.dataset_path + 'rnd/' + str(index) + '.csv', sep=';\t')
-            sla = gauss(self.meanSLA, self.sigmaSLA)
+index = self.possible_indices[randint(0, len(self.possible_indices) - 1)]
+df = pd.read_csv(self.dataset_path + 'rnd/' + str(index) + '.csv', sep=';\t')
+sla = gauss(self.mean_sla, self.sigma_sla)
 ```
 用Uniform distribution选择VM，用Gaussian生成该container的SLA
 ```python
@@ -829,13 +901,15 @@ interval，作为时间戳入参，记录container生成时间
             self.creation_id += 1
 ```
 生成IPS model，RAM model，Disk model。container的disk size根据index决定。
+
 ```python
-        self.createdContainers += workloadlist
-        self.deployedContainers += [False] * len(workloadlist)
+        self.created_containers += workloadlist
+self.deployed_containers += [False] * len(workloadlist)
 ```
 将生成的containers记录到`self.createdContainers`，`self.deployedContainers`设置为`False`。
+
 ```python
-        return self.getUndeployedContainers()
+        return self.get_undeployed_containers()
 ```
 获取所有还没有deploy的containers
 
@@ -854,70 +928,89 @@ class Host:
 参数赋值，powermodel的host赋值本对象
 
 ### `getPowerFromIPS`
+
 ```python
     def getPowerFromIPS(self, ips):
-        return self.powermodel.powerFromCPU(min(100, 100 * (ips / self.ipsCap)))
+
+
+return self.power_model.power_from_cpu(min(100, 100 * (ips / self.ips_cap)))
 ```
 根据IPS获得所需的power。
 
 ### `getCPU`
+
 ```python
     def getCPU(self):
-        ips = self.getApparentIPS()
-        return 100 * (ips / self.ipsCap)
+
+
+    ips = self.get_apparent_ips()
+return 100 * (ips / self.ips_cap)
 ```
 计算执行apparentIPS需要多少CPU，百分比。
 
 ### `getBaseIPS`
+
 ```python
     def getBaseIPS(self):
-        # Get base ips count as sum of min ips of all containers
-        ips = 0
-        containers = self.env.getContainersOfHost(self.id)
-        for containerID in containers:
-            ips += self.env.getContainerByID(containerID).getBaseIPS()
-        # assert ips <= self.ipsCap
-        return ips
+
+
+# Get base ips count as sum of min ips of all containers
+ips = 0
+containers = self.env.get_containers_of_host(self.id)
+for containerID in containers:
+    ips += self.env.get_container_by_id(containerID).get_base_ips()
+# assert ips <= self.ipsCap
+return ips
 ```
 计算本host里所有container所需的最小IPS的和
 
 ### `getApparentIPS`
+
 ```python
     def getApparentIPS(self):
-        # Give containers remaining IPS for faster execution
-        ips = 0
-        containers = self.env.getContainersOfHost(self.id)
-        for containerID in containers:
-            ips += self.env.getContainerByID(containerID).getApparentIPS()
-        # assert int(ips) <= self.ipsCap
-        return int(ips)
+
+
+# Give containers remaining IPS for faster execution
+ips = 0
+containers = self.env.get_containers_of_host(self.id)
+for containerID in containers:
+    ips += self.env.get_container_by_id(containerID).get_apparent_ips()
+# assert int(ips) <= self.ipsCap
+return int(ips)
 ```
 计算本host里所有container可最快执行的IPS的和
 
 ### `getIPSAvailable`
+
 ```python
     def getIPSAvailable(self):
-        return self.ipsCap - self.getBaseIPS()
+
+
+return self.ips_cap - self.get_base_ips()
 ```
 可用IPS = 总IPS - container最小IPS
 
 ### RAM, DISK
+
 ```python
 def getCurrentRAM(self):
-        size, read, write = 0, 0, 0
-        containers = self.env.getContainersOfHost(self.id)
-        for containerID in containers:
-            s, r, w = self.env.getContainerByID(containerID).getRAM()
-            size += s
-            read += r
-            write += w
-        return size, read, write
+    size, read, write = 0, 0, 0
+    containers = self.env.get_containers_of_host(self.id)
+    for containerID in containers:
+        s, r, w = self.env.get_container_by_id(containerID).get_ram()
+        size += s
+        read += r
+        write += w
+    return size, read, write
 ```
 host中每个container所需资源的和
+
 ```python
     def getRAMAvailable(self):
-        size, read, write = self.getCurrentRAM()
-        return self.ramCap.size - size, self.ramCap.read - read, self.ramCap.write - write
+
+
+    size, read, write = self.get_current_ram()
+return self.ram_cap.size - size, self.ram_cap.read - read, self.ram_cap.write - write
 ```
 容量减当前值。<br>
 DISK相同。
@@ -944,12 +1037,14 @@ class PM:
 
 ```python
     def power(self):
-        cpu = self.host.getCPU()
-        index = math.floor(cpu / 10)
-        left = self.powerlist[index]
-        right = self.powerlist[index + 1 if cpu % 10 != 0 else index]
-        alpha = (cpu / 10) - index
-        return alpha * right + (1 - alpha) * left
+
+
+    cpu = self.host.get_cpu()
+index = math.floor(cpu / 10)
+left = self.power_list[index]
+right = self.power_list[index + 1 if cpu % 10 != 0 else index]
+alpha = (cpu / 10) - index
+return alpha * right + (1 - alpha) * left
 ```
 同上但自带获取CPU， CPU值为apparentIPS的CPU
 
@@ -966,80 +1061,103 @@ class Container:
 ```
 创建对象，ID为env.containerlist中ID，creationID为workload中的创建ID
 ### `getBaseIPS`
+
 ```python
     def getBaseIPS(self):
-        return self.ipsmodel.getIPS()
+
+
+    return self.ips_model.get_ips()
 ```
 获得剩余instruction需要的最小IPS
 
 ### `getApparentIPS`
 获取单位时间最多可使用的IPS
+
 ```python
     def getApparentIPS(self):
-        if self.hostid == -1: 
-            return self.ipsmodel.getMaxIPS()
-        hostBaseIPS = self.getHost().getBaseIPS()
-        hostIPSCap = self.getHost().ipsCap
-        canUseIPS = (hostIPSCap - hostBaseIPS) / len(self.env.getContainersOfHost(self.hostid))
+
+
+if self.host_id == -1:
+    return self.ips_model.get_max_ips()
+hostBaseIPS = self.get_host().get_base_ips()
+hostIPSCap = self.get_host().ips_cap
+canUseIPS = (hostIPSCap - hostBaseIPS) / len(self.env.get_containers_of_host(self.host_id))
 ```
 可以使用的IPS=hostIPSCap - hostBaseIPS平均分配至当前host所要处理的container数目
+
 ```python
         if canUseIPS < 0:
-            return 0
-        return min(self.ipsmodel.getMaxIPS(), self.getBaseIPS() + canUseIPS)
+return 0
+return min(self.ips_model.get_max_ips(), self.get_base_ips() + canUseIPS)
 ```
 取$min$(container IPS最大值，container IPS base值+host可用值)为模拟执行的IPS值
 
 ### ```getRAM```
+
 ```python
     def getRAM(self):
-        rsize, rread, rwrite = self.rammodel.ram()
-        self.lastContainerSize = rsize
-        return rsize, rread, rwrite
+
+
+    rsize, rread, rwrite = self.ram_model.ram()
+self.last_container_size = rsize
+return rsize, rread, rwrite
 ```
 通过RAM model获取RAM信息，container的初始size是RAM的size。
 
 ### `getContainerSize`
+
 ```python
     def getContainerSize(self):
-        if self.lastContainerSize == 0: 
-            self.getRAM()
-        return self.lastContainerSize
+
+
+    if self.last_container_size == 0:
+        self.get_ram()
+return self.last_container_size
 ```
 获取container的size
 
 ### `allocate`
+
 ```python
     def allocate(self, hostID, allocBw):
-        lastMigrationTime = 0
-        if self.hostid != hostID:
-            lastMigrationTime += self.getContainerSize() / allocBw
+
+
+    lastMigrationTime = 0
+if self.host_id != hostID:
+    lastMigrationTime += self.get_container_size() / allocBw
 ```
 migration_time增加，container size / 带宽 为migration时间。
+
 ```python
-            lastMigrationTime += abs(self.env.hostlist[self.hostid].latency - self.env.hostlist[hostID].latency)
-        self.hostid = hostID
-        return lastMigrationTime
+            lastMigrationTime += abs(self.env.host_list[self.host_id].latency - self.env.host_list[hostID].latency)
+self.host_id = hostID
+return lastMigrationTime
 ```
 原host的latency - 转移host的latency 为增加的migration time。最后更改container的host。
 
 ### `execute`
+
 ```python
     def execute(self, lastMigrationTime):
-        assert self.hostid != -1
-        self.totalMigrationTime += lastMigrationTime
-        execTime = self.env.intervaltime - lastMigrationTime
+
+
+assert self.host_id != -1
+self.total_migration_time += lastMigrationTime
+execTime = self.env.interval_time - lastMigrationTime
 ```
 叠加总migration时间<br>
 本段interval剩余执行时间=interval时间-migration时间。
+
 ```python
-        apparentIPS = self.getApparentIPS()
-        requiredExecTime = (self.ipsmodel.totalInstructions - self.ipsmodel.completedInstructions) / apparentIPS if apparentIPS else 0
-        self.totalExecTime += min(execTime, requiredExecTime)
+        apparentIPS = self.get_apparent_ips()
+requiredExecTime = (
+                           self.ips_model.total_instructions - self.ips_model.completed_instructions) / apparentIPS if apparentIPS else 0
+self.total_exec_time += min(execTime, requiredExecTime)
 ```
 还需要的执行时间=total-completed/可使用IPS。本interval共可执行时间$min$(剩余执行时间，需要的执行时间)。
+
 ```python
-        self.ipsmodel.completedInstructions += apparentIPS * min(execTime, requiredExecTime)
+        self.ips_model.completed_instructions += apparentIPS * min(execTime, requiredExecTime)
 ```
 已完成的instruction计算。
 
@@ -1050,46 +1168,54 @@ migration_time增加，container size / 带宽 为migration时间。
 ```
 
 ### `destroy`
+
 ```python
     def destroy(self):
-        self.destroyAt = self.env.interval
-        self.hostid = -1
-        self.active = False
+
+
+    self.destroy_at = self.env.interval
+self.host_id = -1
+self.active = False
 ```
 container完成，记录完成时间，重置host和active
 
 ## IPSModel (Container)
 ### `getIPS`
+
 ```python
     def getIPS(self):
-        if self.totalInstructions == 0:
-            for ips in self.ips_list[:self.duration]:
-                self.totalInstructions += ips * self.container.env.intervaltime
-        if self.completedInstructions < self.totalInstructions:
-            return self.ips_list[(self.container.env.interval - self.container.startAt) % len(self.ips_list)]
-        return 0
+
+
+if self.total_instructions == 0:
+    for ips in self.ips_list[:self.duration]:
+        self.total_instructions += ips * self.container.env.interval_time
+if self.completed_instructions < self.total_instructions:
+    return self.ips_list[(self.container.env.interval - self.container.start_at) % len(self.ips_list)]
+return 0
 ```
 计算总instruction，获取bitbrain里对应的ips并乘以interval时长。<br>
 获取当前的IPS，对应时间端bitbrain的IPS
 
 ## DiskModel (container)
 ### `disk`
+
 ```python
     def disk(self):
-        read_list_count = (self.container.env.interval - self.container.startAt) % len(self.read_list)
-        write_list_count = (self.container.env.interval - self.container.startAt) % len(self.write_list)
-        return self.constant_size, self.read_list[read_list_count], self.write_list[write_list_count]
+    read_list_count = (self.container.env.interval - self.container.start_at) % len(self.read_list)
+    write_list_count = (self.container.env.interval - self.container.start_at) % len(self.write_list)
+    return self.constant_size, self.read_list[read_list_count], self.write_list[write_list_count]
 ```
 获取read，write的时间，在list中取对应数据
 
 ## RAMModel (container)
 ### `ram`
+
 ```python
     def ram(self):
-        size_list_count = (self.container.env.interval - self.container.startAt) % len(self.size_list)
-        read_list_count = (self.container.env.interval - self.container.startAt) % len(self.read_list)
-        write_list_count = (self.container.env.interval - self.container.startAt) % len(self.write_list)
-        return self.size_list[size_list_count], self.read_list[read_list_count], self.write_list[write_list_count]
+    size_list_count = (self.container.env.interval - self.container.start_at) % len(self.size_list)
+    read_list_count = (self.container.env.interval - self.container.start_at) % len(self.read_list)
+    write_list_count = (self.container.env.interval - self.container.start_at) % len(self.write_list)
+    return self.size_list[size_list_count], self.read_list[read_list_count], self.write_list[write_list_count]
 ```
 同Disk model。
 
