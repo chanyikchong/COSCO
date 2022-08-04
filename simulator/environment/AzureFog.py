@@ -1,12 +1,5 @@
-import numpy as np
-from simulator.host.Disk import *
-from simulator.host.RAM import *
-from simulator.host.Bandwidth import *
-from metrics.powermodels.PMRaspberryPi import *
-from metrics.powermodels.PMB2s import *
-from metrics.powermodels.PMB4ms import *
-from metrics.powermodels.PMB8ms import *
-from metrics.powermodels.PMXeon_X5570 import *
+import simulator.host as host
+import metrics.powermodels as pm
 
 
 class AzureFog:
@@ -55,18 +48,18 @@ class AzureFog:
                 }
         }
 
-    def generateHosts(self):
+    def generate_hosts(self):
         hosts = []
         types = ['B2s', 'B2s', 'B2s', 'B2s', 'B4ms', 'B4ms', 'B4ms', 'B4ms', 'B8ms', 'B8ms'] * 5
         for i in range(self.num_hosts):
-            typeID = types[i]
-            IPS = self.types[typeID]['IPS']
-            Ram = RAM(self.types[typeID]['RAMSize'], self.types[typeID]['RAMRead'] * 5,
-                      self.types[typeID]['RAMWrite'] * 5)
-            Disk_ = Disk(self.types[typeID]['DiskSize'], self.types[typeID]['DiskRead'] * 5,
-                         self.types[typeID]['DiskWrite'] * 10)
-            Bw = Bandwidth(self.types[typeID]['BwUp'], self.types[typeID]['BwDown'])
-            Power = eval(self.types[typeID]['Power'] + '()')
-            Latency = 0.003 if i < self.edge_hosts else 0.076
-            hosts.append((IPS, Ram, Disk_, Bw, Latency, Power))
+            type_id = types[i]
+            ips = self.types[type_id]['IPS']
+            ram = host.RAM(self.types[type_id]['RAMSize'], self.types[type_id]['RAMRead'] * 5,
+                           self.types[type_id]['RAMWrite'] * 5)
+            disk = host.Disk(self.types[type_id]['DiskSize'], self.types[type_id]['DiskRead'] * 5,
+                             self.types[type_id]['DiskWrite'] * 10)
+            bw = host.Bandwidth(self.types[type_id]['BwUp'], self.types[type_id]['BwDown'])
+            power = eval("pm.%s()" % self.types[type_id]['Power'])
+            latency = 0.003 if i < self.edge_hosts else 0.076
+            hosts.append((ips, ram, disk, bw, latency, power))
         return hosts

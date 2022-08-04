@@ -1,13 +1,5 @@
-import numpy as np
-from simulator.host.Disk import *
-from simulator.host.RAM import *
-from simulator.host.Bandwidth import *
-from metrics.powermodels.PMRaspberryPi import *
-from metrics.powermodels.PMB2s import *
-from metrics.powermodels.PMB4ms import *
-from metrics.powermodels.PMB8ms import *
-from metrics.powermodels.PMXeon_X5570 import *
-from metrics.powermodels.PMConstant import *
+import simulator.host as host
+import metrics.powermodels as pm
 
 
 class SimpleFog:
@@ -26,15 +18,16 @@ class SimpleFog:
             'Power': [1]
         }
 
-    def generateHosts(self):
+    def generate_hosts(self):
         hosts = []
         for i in range(self.num_hosts):
-            typeID = i % 3  # np.random.randint(0,3) # i%3 #
-            IPS = self.types['IPS'][typeID]
-            Ram = RAM(self.types['RAMSize'][typeID], self.types['RAMRead'][typeID], self.types['RAMWrite'][typeID])
-            Disk_ = Disk(self.types['DiskSize'][typeID], self.types['DiskRead'][typeID],
-                         self.types['DiskWrite'][typeID])
-            Bw = Bandwidth(self.types['BwUp'][typeID], self.types['BwDown'][typeID])
-            Power = PMConstant(self.types['Power'][typeID]) if typeID < 1 else PMRaspberryPi()
-            hosts.append((IPS, Ram, Disk_, Bw, 0, Power))
+            type_id = i % 3  # np.random.randint(0,3) # i%3 #
+            ips = self.types['IPS'][type_id]
+            ram = host.RAM(self.types['RAMSize'][type_id], self.types['RAMRead'][type_id],
+                           self.types['RAMWrite'][type_id])
+            disk = host.Disk(self.types['DiskSize'][type_id], self.types['DiskRead'][type_id],
+                             self.types['DiskWrite'][type_id])
+            bw = host.Bandwidth(self.types['BwUp'][type_id], self.types['BwDown'][type_id])
+            power = pm.PMConstant(self.types['Power'][type_id]) if type_id < 1 else pm.PMRaspberryPi()
+            hosts.append((ips, ram, disk, bw, 0, power))
         return hosts
