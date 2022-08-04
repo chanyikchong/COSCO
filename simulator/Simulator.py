@@ -13,7 +13,7 @@ class Simulator:
         self.total_bw = router_bw
         self.host_limit = len(host_init)
         self.scheduler = scheduler
-        self.scheduler.setEnvironment(self)
+        self.scheduler.set_environment(self)
         self.container_limit = container_limit
         self.host_list = list()
         self.container_list = list()
@@ -95,10 +95,10 @@ class Simulator:
     def get_placement_possible(self, container_id, host_id):
         container = self.container_list[container_id]
         host = self.host_list[host_id]
-        ips_req = container.getBaseIPS()
+        ips_req = container.get_base_ips()
         ram_size_req, ram_read_req, ram_write_req = container.get_ram()
         disk_size_req, disk_read_req, disk_write_req = container.get_disk()
-        ips_available = host.getIPSAvailable()
+        ips_available = host.get_ips_available()
         ram_size_avil, ram_read_avil, ram_write_avil = host.get_ram_available()
         disk_size_avil, disk_read_avil, disk_write_avil = host.get_disk_available()
         return (ips_req <= ips_available and
@@ -170,17 +170,17 @@ class Simulator:
         migrations = list()
         for (cid, hid) in decision:
             container = self.get_container_by_id(cid)
-            current_host_id = self.get_container_by_id(cid).getHostID()
+            current_host_id = self.get_container_by_id(cid).get_host_id()
             current_host = self.get_host_by_id(current_host_id)
             target_host = self.get_host_by_id(hid)
             # todo PEP8 form in scheduler
-            migrate_from_num = len(self.scheduler.getMigrationFromHost(current_host_id, decision))
-            migrate_to_num = len(self.scheduler.getMigrationToHost(hid, decision))
+            migrate_from_num = len(self.scheduler.get_migration_from_host(current_host_id, decision))
+            migrate_to_num = len(self.scheduler.get_migration_to_host(hid, decision))
 
-            download_bw = target_host.bwCap.downlink / migrate_to_num
-            upload_bw = current_host.bwCap.uplink / migrate_from_num if current_host_id != -1 else np.inf
+            download_bw = target_host.bw_cap.downlink / migrate_to_num
+            upload_bw = current_host.bw_cap.uplink / migrate_from_num if current_host_id != -1 else np.inf
             alloc_bw = min(download_bw, upload_bw, router_bw_to_each)
-            if hid != self.container_list[cid].hostid and self.get_placement_possible(cid, hid):
+            if hid != self.container_list[cid].host_id and self.get_placement_possible(cid, hid):
                 migrations.append((cid, hid))
                 container.allocate(hid, alloc_bw)
 

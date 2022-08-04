@@ -4,9 +4,9 @@ from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels \
     import RBF, WhiteKernel, ConstantKernel as C
 from sklearn.cluster import KMeans
-from src.custom_kernels import HeteroscedasticKernel
-from src.utils import *
-from src.HGPopt import *
+from .src.custom_kernels import HeteroscedasticKernel
+from .src.utils import *
+from .src.HGPopt import *
 import pickle
 from time import time
 import random

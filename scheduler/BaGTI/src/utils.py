@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import os
-from src.constants import *
+from .constants import *
 import pandas as pd
 import numpy as np
 import torch

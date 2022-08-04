@@ -2,8 +2,8 @@ import random
 import torch
 import numpy as np
 from copy import deepcopy
-from src.constants import *
-from src.adahessian import Adahessian
+from .constants import *
+from .adahessian import Adahessian
 import matplotlib.pyplot as plt
 
 
