@@ -1,63 +1,58 @@
-from simulator.host.Disk import *
-from simulator.host.RAM import *
-from simulator.host.Bandwidth import *
-
-
 class Host:
     # IPS = Million Instructions per second capacity
     # RAM = Ram in MB capacity
     # Disk = Disk characteristics capacity
     # Bw = Bandwidth characteristics capacity
-    def __init__(self, ID, IPS, RAM, Disk, Bw, Latency, Powermodel, Environment):
-        self.id = ID
-        self.ipsCap = IPS
-        self.ramCap = RAM
-        self.diskCap = Disk
-        self.bwCap = Bw
-        self.latency = Latency
-        self.powermodel = Powermodel
-        self.powermodel.allocHost(self)
-        self.powermodel.host = self
-        self.env = Environment
+    def __init__(self, identity, ips, ram, disk, bw, latency, power_model, environment):
+        self.id = identity
+        self.ips_cap = ips
+        self.ram_cap = ram
+        self.disk_cap = disk
+        self.bw_cap = bw
+        self.latency = latency
+        self.power_model = power_model
+        self.power_model.allocHost(self)
+        self.power_model.host = self
+        self.env = environment
 
-    def getPower(self):
-        return self.powermodel.power()
+    def get_power(self):
+        return self.power_model.power()
 
     def get_power_max(self):
-        return self.powermodel.powerFromCPU(100)
+        return self.power_model.powerFromCPU(100)
 
-    def getPowerFromIPS(self, ips):
-        return self.powermodel.powerFromCPU(min(100, 100 * (ips / self.ipsCap)))
+    def get_power_from_ips(self, ips):
+        return self.power_model.powerFromCPU(min(100, 100 * (ips / self.ips_cap)))
 
-    def getCPU(self):
-        ips = self.getApparentIPS()
-        return 100 * (ips / self.ipsCap)
+    def get_cpu(self):
+        ips = self.get_apparent_ips()
+        return 100 * (ips / self.ips_cap)
 
-    def getBaseIPS(self):
+    def get_base_ips(self):
         # Get base ips count as sum of min ips of all containers
         ips = 0
         containers = self.env.getContainersOfHost(self.id)
         for containerID in containers:
-            ips += self.env.getContainerByID(containerID).getBaseIPS()
+            ips += self.env.getContainerByID(containerID).get_base_ips()
         # assert ips <= self.ipsCap
         return ips
 
-    def getApparentIPS(self):
+    def get_apparent_ips(self):
         # Give containers remaining IPS for faster execution
         ips = 0
         containers = self.env.getContainersOfHost(self.id)
         for containerID in containers:
-            ips += self.env.getContainerByID(containerID).getApparentIPS()
+            ips += self.env.getContainerByID(containerID).get_apparent_ips()
         # assert int(ips) <= self.ipsCap
         return int(ips)
 
-    def getIPSAvailable(self):
+    def get_ips_available(self):
         # IPS available is ipsCap - baseIPS
         # When containers allocated, existing ips can be allocated to
         # the containers
-        return self.ipsCap - self.getBaseIPS()
+        return self.ips_cap - self.get_base_ips()
 
-    def getCurrentRAM(self):
+    def get_current_ram(self):
         size, read, write = 0, 0, 0
         containers = self.env.getContainersOfHost(self.id)
         for containerID in containers:
@@ -70,11 +65,11 @@ class Host:
         # assert write <= self.ramCap.write
         return size, read, write
 
-    def getRAMAvailable(self):
-        size, read, write = self.getCurrentRAM()
-        return self.ramCap.size - size, self.ramCap.read - read, self.ramCap.write - write
+    def get_ram_available(self):
+        size, read, write = self.get_current_ram()
+        return self.ram_cap.size - size, self.ram_cap.read - read, self.ram_cap.write - write
 
-    def getCurrentDisk(self):
+    def get_current_disk(self):
         size, read, write = 0, 0, 0
         containers = self.env.getContainersOfHost(self.id)
         for containerID in containers:
@@ -82,11 +77,11 @@ class Host:
             size += s
             read += r
             write += w
-        assert size <= self.diskCap.size
-        assert read <= self.diskCap.read
-        assert write <= self.diskCap.write
+        assert size <= self.disk_cap.size
+        assert read <= self.disk_cap.read
+        assert write <= self.disk_cap.write
         return size, read, write
 
-    def getDiskAvailable(self):
-        size, read, write = self.getCurrentDisk()
-        return self.diskCap.size - size, self.diskCap.read - read, self.diskCap.write - write
+    def get_disk_available(self):
+        size, read, write = self.get_current_disk()
+        return self.disk_cap.size - size, self.disk_cap.read - read, self.disk_cap.write - write
