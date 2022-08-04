@@ -31,18 +31,18 @@ class Host:
     def get_base_ips(self):
         # Get base ips count as sum of min ips of all containers
         ips = 0
-        containers = self.env.getContainersOfHost(self.id)
+        containers = self.env.get_containers_of_host(self.id)
         for containerID in containers:
-            ips += self.env.getContainerByID(containerID).get_base_ips()
+            ips += self.env.get_container_by_id(containerID).get_base_ips()
         # assert ips <= self.ipsCap
         return ips
 
     def get_apparent_ips(self):
         # Give containers remaining IPS for faster execution
         ips = 0
-        containers = self.env.getContainersOfHost(self.id)
+        containers = self.env.get_containers_of_host(self.id)
         for containerID in containers:
-            ips += self.env.getContainerByID(containerID).get_apparent_ips()
+            ips += self.env.get_container_by_id(containerID).get_apparent_ips()
         # assert int(ips) <= self.ipsCap
         return int(ips)
 
@@ -54,9 +54,9 @@ class Host:
 
     def get_current_ram(self):
         size, read, write = 0, 0, 0
-        containers = self.env.getContainersOfHost(self.id)
+        containers = self.env.get_containers_of_host(self.id)
         for containerID in containers:
-            s, r, w = self.env.getContainerByID(containerID).getRAM()
+            s, r, w = self.env.get_container_by_id(containerID).get_ram()
             size += s
             read += r
             write += w
@@ -71,9 +71,9 @@ class Host:
 
     def get_current_disk(self):
         size, read, write = 0, 0, 0
-        containers = self.env.getContainersOfHost(self.id)
+        containers = self.env.get_containers_of_host(self.id)
         for containerID in containers:
-            s, r, w = self.env.getContainerByID(containerID).getDisk()
+            s, r, w = self.env.get_container_by_id(containerID).get_disk()
             size += s
             read += r
             write += w

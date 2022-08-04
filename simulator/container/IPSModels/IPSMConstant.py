@@ -12,7 +12,7 @@ class IPSMConstant(IPSM):
         self.total_instructions = 0
 
     def get_ips(self):
-        self.total_instructions = self.constant_ips * self.duration * self.container.env.intervaltime
+        self.total_instructions = self.constant_ips * self.duration * self.container.env.interval_time
         if self.completed_instructions < self.total_instructions:
             return self.constant_ips
         return 0

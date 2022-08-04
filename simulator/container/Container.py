@@ -32,7 +32,7 @@ class Container:
             return self.ips_model.get_max_ips()
         host_base_ips = self.get_host().get_base_ips()
         host_ips_cap = self.get_host().ips_cap
-        can_use_ips = (host_ips_cap - host_base_ips) / len(self.env.getContainersOfHost(self.host_id))
+        can_use_ips = (host_ips_cap - host_base_ips) / len(self.env.get_containers_of_host(self.host_id))
         if can_use_ips < 0:
             return 0
         return min(self.ips_model.get_max_ips(), self.get_base_ips() + can_use_ips)
@@ -54,7 +54,7 @@ class Container:
         return self.host_id
 
     def get_host(self):
-        return self.env.getHostByID(self.host_id)
+        return self.env.get_host_by_id(self.host_id)
 
     def allocate(self, host_id, alloc_bw):
         # Migrate if allocated to a different host
@@ -64,7 +64,7 @@ class Container:
         if self.host_id != host_id:
             self.last_migration_time += self.get_container_size() / alloc_bw
             self.last_migration_time += abs(
-                self.env.hostlist[self.host_id].latency - self.env.hostlist[host_id].latency)
+                self.env.host_list[self.host_id].latency - self.env.host_list[host_id].latency)
         self.host_id = host_id
         return self.last_migration_time
 
@@ -74,7 +74,7 @@ class Container:
         # time - migration time with apparent ips
         assert self.host_id != -1
         self.total_migration_time += self.last_migration_time
-        exec_time = self.env.intervaltime - self.last_migration_time
+        exec_time = self.env.interval_time - self.last_migration_time
         apparent_ips = self.get_apparent_ips()
         remain_instructions = self.ips_model.total_instructions - self.ips_model.completed_instructions
         required_exec_time = remain_instructions / apparent_ips if apparent_ips else 0
