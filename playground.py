@@ -9,7 +9,6 @@ import matplotlib.pyplot as plt
 
 import torch
 import pandas as pd
-from memory_profiler import profile
 
 from simulator.environment.AzureFog import AzureFog
 from simulator.workload.BitbrainWorkload2 import BWGD2
@@ -18,30 +17,7 @@ from stats.Stats import Stats
 from utils.Utils import generate_decision_migration_string
 from utils.ColorUtils import color
 
-# from scheduler.IQR_MMT_Random import IQRMMTRScheduler
-from scheduler.MAD_MMT_Random import MADMMTRScheduler
-from scheduler.MAD_MC_Random import MADMCRScheduler
-from scheduler.LR_MMT_Random import LRMMTRScheduler
-# from scheduler.Random_Random_FirstFit import RFScheduler
-# from scheduler.Random_Random_LeastFull import RLScheduler
-# from scheduler.RLR_MMT_Random import RLRMMTRScheduler
-# from scheduler.Threshold_MC_Random import TMCRScheduler
-# from scheduler.Random_Random_Random import RandomScheduler
-# from scheduler.HGP_LBFGS import HGPScheduler
-# from scheduler.GA import GAScheduler
-from scheduler.GOBI import GOBIScheduler
-
-
-# from scheduler.GOBI2 import GOBI2Scheduler
-# from scheduler.DRL import DRLScheduler
-# from scheduler.DQL import DQLScheduler
-# from scheduler.POND import PONDScheduler
-# from scheduler.SOGOBI import SOGOBIScheduler
-# from scheduler.SOGOBI2 import SOGOBI2Scheduler
-# from scheduler.HGOBI import HGOBIScheduler
-# from scheduler.HGOBI2 import HGOBI2Scheduler
-# from scheduler.HSOGOBI import HSOGOBIScheduler
-# from scheduler.HSOGOBI2 import HSOGOBI2Scheduler
+import scheduler as sc
 
 
 def init_logger(file_name, level='debug'):
@@ -85,7 +61,7 @@ def initalize_environment(env_setting, scheduler, logger):
     logger.info("Schedule: %s" % str(env.getActiveContainerList()))
     logger.info(generate_decision_migration_string(decision, migrations))
 
-    stats.saveStats(deployed, migrations, [], deployed, decision, scheduling_time)
+    stats.save_stats(deployed, migrations, [], deployed, decision, scheduling_time)
     return datacenter, workload, scheduler, env, stats
 
 
@@ -111,7 +87,7 @@ def step_simulation(workload, scheduler, env, stats, logger):
     logger.info("Host allocation: %s" % str([(c.getHostID() if c else -1) for c in env.containerlist]))
     logger.info(generate_decision_migration_string(decision, migrations))
 
-    stats.saveStats(deployed, migrations, destroyed, selected, decision, scheduling_time)
+    stats.save_stats(deployed, migrations, destroyed, selected, decision, scheduling_time)
 
 
 def save_stats(log_file, env_setting, stats, datacenter, workload, env, end=True):
@@ -124,7 +100,7 @@ def save_stats(log_file, env_setting, stats, datacenter, workload, env, end=True
     if os.path.exists(dirname):
         shutil.rmtree(dirname, ignore_errors=True)
     os.mkdir(dirname)
-    stats.generateDatasets(dirname)
+    stats.generate_datasets(dirname)
     if 'Datacenter' in datacenter.__class__.__name__:
         saved_env = stats.env
         saved_workload = stats.workload
@@ -145,8 +121,8 @@ def save_stats(log_file, env_setting, stats, datacenter, workload, env, end=True
         stats.simulated_scheduler = saved_sim_scheduler
     if not end:
         return
-    stats.generateGraphs(dirname)
-    stats.generateCompleteDatasets(dirname)
+    stats.generate_graphs(dirname)
+    stats.generate_complete_datasets(dirname)
     stats.env = None
     stats.workload = None
     stats.datacenter = None
@@ -162,6 +138,7 @@ def save_stats(log_file, env_setting, stats, datacenter, workload, env, end=True
         pickle.dump(stats, handle)
     return dirname
 
+
 def test(log_file):
     with open('var/env_setting.pkl', 'rb') as f:
         env_setting = pickle.load(f)
@@ -173,7 +150,7 @@ def test(log_file):
         workload = pickle.load(f)
     with open('var/env.pkl', 'rb') as f:
         env = pickle.load(f)
-    
+
     start_time = time()
     dirname = save_stats(log_file, env_setting, stats, datacenter, workload, env)
     if os.path.exists(file_pandas):
@@ -199,8 +176,8 @@ def main(env_setting, scheduler_dict, mean_container_list, num_seed=10, start_se
             for scheduler_key, scheduler_value in scheduler_dict.items():
 
                 env_setting['scheduler'] = scheduler_key
-                scheduler = eval("%s('%s')" % (scheduler_key, scheduler_value)) if len(scheduler_value) > 0 else eval(
-                    "%s()" % scheduler_key)
+                scheduler = eval("sc.%s('%s')" % (scheduler_key, scheduler_value)) if len(
+                    scheduler_value) > 0 else eval("sc.%s()" % scheduler_key)
 
                 datacenter, workload, scheduler, env, stats = initalize_environment(env_setting, scheduler, logger)
 
