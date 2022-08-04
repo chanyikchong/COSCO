@@ -45,7 +45,7 @@ class Stats:
     def save_workload_info(self, deployed, migrations):
         workload_info = dict()
         workload_info['interval'] = self.env.interval
-        workload_info['total_containers'] = len(self.workload.createdContainers)
+        workload_info['total_containers'] = len(self.workload.created_containers)
         # check workload_info is empty or not
         if self.workload_info:
             workload_info['new_containers'] = workload_info['total_containers'] - self.workload_info[-1][
@@ -54,7 +54,7 @@ class Stats:
             workload_info['new_containers'] = workload_info['total_containers']
         workload_info['deployed'] = len(deployed)
         workload_info['migrations'] = len(migrations)
-        workload_info['in_queue'] = len(self.workload.getUndeployedContainers())
+        workload_info['in_queue'] = len(self.workload.get_undeployed_containers())
         self.workload_info.append(workload_info)
 
     def save_container_info(self):
@@ -73,11 +73,11 @@ class Stats:
     def save_all_container_info(self):
         container_info = dict()
         all_created_containers = [self.env.getContainerByCID(cid) for cid in
-                                  list(np.where(self.workload.deployedContainers)[0])]
+                                  list(np.where(self.workload.deployed_containers)[0])]
         container_info['interval'] = self.env.interval
         if self.datacenter.__class__.__name__ == 'Datacenter':
             container_info['application'] = [self.env.getContainerByCID(cid).application for cid in
-                                             list(np.where(self.workload.deployedContainers)[0])]
+                                             list(np.where(self.workload.deployed_containers)[0])]
         container_info['ips'] = [c.getBaseIPS() if c.active else 0 for c in all_created_containers]
         container_info['create'] = [c.createAt for c in all_created_containers]
         container_info['start'] = [c.startAt for c in all_created_containers]
