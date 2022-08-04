@@ -1,16 +1,12 @@
 import sys
-import logging as logger
 import pickle
-from os import rename
 from time import time
+import shutil
 
 # Simulator imports
-from simulator.Simulator import *
-from simulator.environment.AzureFog import *
-from simulator.environment.BitbrainFog import *
-from simulator.workload.BitbrainWorkload2 import *
-from simulator.workload.Azure2017Workload import *
-from simulator.workload.Azure2019Workload import *
+from simulator.Simulator import Simulator
+import simulator.environment as environment
+import simulator.workload as wl
 
 # Scheduler imports
 import scheduler as sc
@@ -20,7 +16,7 @@ from stats.Stats import Stats
 from utils.Utils import *
 
 # Global constants
-NUM_SIM_STEPS = 200
+NUM_SIM_STEPS = 3
 HOSTS = 10 * 5
 CONTAINERS = HOSTS
 TOTAL_POWER = 1000
@@ -32,7 +28,7 @@ DB_HOST = ''
 DB_PORT = 0
 HOSTS_IP = []
 log_file = 'COSCO.log'
-SAVE_FITNESS = False
+SAVE_FITNESS = True
 
 if len(sys.argv) > 1:
     with open(log_file, 'w'):
@@ -42,11 +38,11 @@ if len(sys.argv) > 1:
 def initalize_environment():
     # Initialize simple fog datacenter
     ''' Can be SimpleFog, BitbrainFog, AzureFog // Datacenter '''
-    datacenter = AzureFog(HOSTS)
+    datacenter = environment.AzureFog(HOSTS)
 
     # Initialize workload
     ''' Can be SWSD, BWGD2, Azure2017Workload, Azure2019Workload // DFW, AIoTW '''
-    workload = BWGD2(NEW_CONTAINERS, 1.5)
+    workload = wl.BWGD2(NEW_CONTAINERS)
 
     # Initialize scheduler
     ''' Can be LRMMTR, RF, RL, RM, Random, RLRMMTR, TMCR, TMMR, TMMTR, GA, GOBI (arg = 'energy_latency_'+str(HOSTS)) '''
@@ -54,33 +50,33 @@ def initalize_environment():
     # scheduler = RFScheduler()
 
     # Initialize Environment
-    hostlist = datacenter.generateHosts()
+    hostlist = datacenter.generate_hosts()
     env = Simulator(TOTAL_POWER, ROUTER_BW, scheduler, CONTAINERS, INTERVAL_TIME, hostlist)
 
     # Initialize stats
     stats = Stats(env, workload, datacenter, scheduler)
 
     # Execute first step
-    new_container_infos = workload.generateNewContainers(env.interval)  # New containers info
+    new_container_infos = workload.generate_new_containers(env.interval)  # New containers info
 
-    deployed = env.addContainersInit(new_container_infos)  # Deploy new containers and get container IDs
+    deployed = env.add_containers_init(new_container_infos)  # Deploy new containers and get container IDs
 
     start = time()
     decision = scheduler.placement(deployed)  # Decide placement using container ids
     scheduling_time = time() - start
 
     if SAVE_FITNESS:
-        migrations, fitness = env.simulationStep(decision, save_fitness=SAVE_FITNESS)  # Schedule containers
+        migrations, fitness = env.simulation_step(decision, save_fitness=SAVE_FITNESS)  # Schedule containers
     else:
-        migrations = env.simulationStep(decision, save_fitness=SAVE_FITNESS)
+        migrations = env.simulation_step(decision, save_fitness=SAVE_FITNESS)
         fitness = None
 
     # Update workload allocated using creation IDs
-    workload.updateDeployedContainers(env.getCreationIDs(migrations, deployed))
+    workload.update_deployed_containers(env.get_creation_ids(migrations, deployed))
 
-    print("Deployed containers' creation IDs:", env.getCreationIDs(migrations, deployed))
-    print("Containers in host:", env.getContainersInHosts())
-    print("Schedule:", env.getActiveContainerList())
+    print("Deployed containers' creation IDs:", env.get_creation_ids(migrations, deployed))
+    print("Containers in host:", env.get_containers_in_hosts())
+    print("Schedule:", env.get_active_container_list())
     print_decision_and_migrations(decision, migrations)
 
     stats.save_stats(deployed, migrations, [], deployed, decision, scheduling_time, fitness=fitness)
@@ -88,9 +84,9 @@ def initalize_environment():
 
 
 def step_simulation(workload, scheduler, env, stats):
-    new_container_infos = workload.generateNewContainers(env.interval)  # New containers info
+    new_container_infos = workload.generate_new_containers(env.interval)  # New containers info
 
-    deployed, destroyed = env.addContainers(new_container_infos)  # Deploy new containers and get container IDs
+    deployed, destroyed = env.add_containers(new_container_infos)  # Deploy new containers and get container IDs
 
     start = time()
     selected = scheduler.selection()  # Select container IDs for migration
@@ -99,21 +95,21 @@ def step_simulation(workload, scheduler, env, stats):
     scheduling_time = time() - start
 
     if SAVE_FITNESS:
-        migrations, fitness = env.simulationStep(decision, save_fitness=SAVE_FITNESS)  # Schedule containers
+        migrations, fitness = env.simulation_step(decision, save_fitness=SAVE_FITNESS)  # Schedule containers
     else:
-        migrations = env.simulationStep(decision, save_fitness=SAVE_FITNESS)
+        migrations = env.simulation_step(decision, save_fitness=SAVE_FITNESS)
         fitness = None
 
     # Update workload deployed using creation IDs
-    workload.updateDeployedContainers(env.getCreationIDs(migrations, deployed))
+    workload.update_deployed_containers(env.get_creation_ids(migrations, deployed))
 
-    print("Deployed containers' creation IDs:", env.getCreationIDs(migrations, deployed))
-    print("Deployed:", len(env.getCreationIDs(migrations, deployed)), "of", len(new_container_infos),
+    print("Deployed containers' creation IDs:", env.get_creation_ids(migrations, deployed))
+    print("Deployed:", len(env.get_creation_ids(migrations, deployed)), "of", len(new_container_infos),
           [i[0] for i in new_container_infos])
-    print("Destroyed:", len(destroyed), "of", env.getNumActiveContainers())
-    print("Containers in host:", env.getContainersInHosts())
-    print("Num active containers:", env.getNumActiveContainers())
-    print("Host allocation:", [(c.getHostID() if c else -1) for c in env.containerlist])
+    print("Destroyed:", len(destroyed), "of", env.get_num_active_containers())
+    print("Containers in host:", env.get_containers_in_hosts())
+    print("Num active containers:", env.get_num_active_containers())
+    print("Host allocation:", [(c.get_host_id() if c else -1) for c in env.container_list])
     print_decision_and_migrations(decision, migrations)
 
     stats.save_stats(deployed, migrations, destroyed, selected, decision, scheduling_time, fitness=fitness)

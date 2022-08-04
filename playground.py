@@ -10,8 +10,8 @@ import matplotlib.pyplot as plt
 import torch
 import pandas as pd
 
-from simulator.environment.AzureFog import AzureFog
-from simulator.workload.BitbrainWorkload2 import BWGD2
+from simulator.environment import AzureFog
+import simulator.workload as wl
 from simulator.Simulator import Simulator
 from stats.Stats import Stats
 from utils.Utils import generate_decision_migration_string
@@ -37,9 +37,9 @@ def init_logger(file_name, level='debug'):
 
 def initalize_environment(env_setting, scheduler, logger):
     datacenter = AzureFog(env_setting.get('num_hosts'))
-    workload = BWGD2(env_setting.get('mean_container'), env_setting.get('std_container'))
+    workload = wl.BWGD2(env_setting.get('mean_container'))
 
-    host_list = datacenter.generateHosts()
+    host_list = datacenter.generate_hosts()
 
     env = Simulator(env_setting.get('total_power'), env_setting.get('router_bw'), scheduler,
                     env_setting.get('max_container'), env_setting.get('interval_time'), host_list)
@@ -48,17 +48,17 @@ def initalize_environment(env_setting, scheduler, logger):
     stats = Stats(env, workload, datacenter, scheduler)
 
     # Execute first step
-    new_container_infos = workload.generateNewContainers(env.interval)  # New containers info
-    deployed = env.addContainersInit(new_container_infos)  # Deploy new containers and get container IDs
+    new_container_infos = workload.generate_new_containers(env.interval)  # New containers info
+    deployed = env.add_containers_init(new_container_infos)  # Deploy new containers and get container IDs
     start = time()
     decision = scheduler.placement(deployed)  # Decide placement using container ids
     scheduling_time = time() - start
-    migrations = env.allocateInit(decision)  # Schedule containers
-    workload.updateDeployedContainers(
-        env.getCreationIDs(migrations, deployed))  # Update workload allocated using creation IDs
-    logger.info("Deployed containers' creation IDs: %s" % str(env.getCreationIDs(migrations, deployed)))
-    logger.info("Containers in host: %s" % str(env.getContainersInHosts()))
-    logger.info("Schedule: %s" % str(env.getActiveContainerList()))
+    migrations = env.allocate_init(decision)  # Schedule containers
+    workload.update_deployed_containers(
+        env.get_creation_ids(migrations, deployed))  # Update workload allocated using creation IDs
+    logger.info("Deployed containers' creation IDs: %s" % str(env.get_creation_ids(migrations, deployed)))
+    logger.info("Containers in host: %s" % str(env.get_containers_in_hosts()))
+    logger.info("Schedule: %s" % str(env.get_active_container_list()))
     logger.info(generate_decision_migration_string(decision, migrations))
 
     stats.save_stats(deployed, migrations, [], deployed, decision, scheduling_time)
@@ -66,25 +66,25 @@ def initalize_environment(env_setting, scheduler, logger):
 
 
 def step_simulation(workload, scheduler, env, stats, logger):
-    new_container_infos = workload.generateNewContainers(env.interval)  # New containers info
-    deployed, destroyed = env.addContainers(new_container_infos)  # Deploy new containers and get container IDs
+    new_container_infos = workload.generate_new_containers(env.interval)  # New containers info
+    deployed, destroyed = env.add_containers(new_container_infos)  # Deploy new containers and get container IDs
     start = time()
     selected = scheduler.selection()  # Select container IDs for migration
 
     # Decide placement for selected container ids
     decision = scheduler.filter_placement(scheduler.placement(selected + deployed))
     scheduling_time = time() - start
-    migrations = env.simulationStep(decision)  # Schedule containers
+    migrations = env.simulation_step(decision)  # Schedule containers
 
     # Update workload deployed using creation IDs
-    workload.updateDeployedContainers(env.getCreationIDs(migrations, deployed))
-    logger.info("Deployed containers' creation IDs: %s", str(env.getCreationIDs(migrations, deployed)))
-    logger.info("Deployed: %d of %d %s" % (len(env.getCreationIDs(migrations, deployed)), len(new_container_infos),
+    workload.update_deployed_containers(env.get_creation_ids(migrations, deployed))
+    logger.info("Deployed containers' creation IDs: %s", str(env.get_creation_ids(migrations, deployed)))
+    logger.info("Deployed: %d of %d %s" % (len(env.get_creation_ids(migrations, deployed)), len(new_container_infos),
                                            str([i[0] for i in new_container_infos])))
-    logger.info("Destroyed: %d of %d" % (len(destroyed), env.getNumActiveContainers()))
-    logger.info("Containers in host: %s" % str(env.getContainersInHosts()))
-    logger.info("Num active containers: %s", str(env.getNumActiveContainers()))
-    logger.info("Host allocation: %s" % str([(c.getHostID() if c else -1) for c in env.containerlist]))
+    logger.info("Destroyed: %d of %d" % (len(destroyed), env.get_num_active_containers()))
+    logger.info("Containers in host: %s" % str(env.get_containers_in_hosts()))
+    logger.info("Num active containers: %s", str(env.get_num_active_containers()))
+    logger.info("Host allocation: %s" % str([(c.get_host_id() if c else -1) for c in env.container_list]))
     logger.info(generate_decision_migration_string(decision, migrations))
 
     stats.save_stats(deployed, migrations, destroyed, selected, decision, scheduling_time)
