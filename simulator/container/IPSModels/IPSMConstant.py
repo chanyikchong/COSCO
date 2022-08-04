@@ -1,20 +1,21 @@
-from .IPSM import *
+from .IPSM import IPSM
 
 
 class IPSMConstant(IPSM):
-    def __init__(self, constant_ips, max_ips, duration, SLA):
+    def __init__(self, constant_ips, max_ips, duration, sla):
         super().__init__()
         self.constant_ips = constant_ips
         self.max_ips = max_ips
-        self.SLA = SLA
+        self.sla = sla
         self.duration = duration
-        self.completedInstructions = 0
+        self.completed_instructions = 0
+        self.total_instructions = 0
 
-    def getIPS(self):
-        self.totalInstructions = self.constant_ips * self.duration * self.container.env.intervaltime
-        if self.completedInstructions < self.totalInstructions:
+    def get_ips(self):
+        self.total_instructions = self.constant_ips * self.duration * self.container.env.intervaltime
+        if self.completed_instructions < self.total_instructions:
             return self.constant_ips
         return 0
 
-    def getMaxIPS(self):
+    def get_max_ips(self):
         return self.max_ips
