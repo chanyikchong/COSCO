@@ -37,7 +37,7 @@ def create_files(df, year=2019):
         pd.DataFrame(trace).to_csv(f'simulator/workload/datasets/azure_{str(year)}/{i}.csv', header=False, index=False)
 
 
-class Azure2019Workload(Workload):
+class AzureWorkload(Workload):
     def __init__(self, lam, year=2019):
         super().__init__()
         self.lam = lam
