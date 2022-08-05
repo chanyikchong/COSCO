@@ -173,7 +173,6 @@ class Simulator:
             current_host_id = self.get_container_by_id(cid).get_host_id()
             current_host = self.get_host_by_id(current_host_id)
             target_host = self.get_host_by_id(hid)
-            # todo PEP8 form in scheduler
             migrate_from_num = len(self.scheduler.get_migration_from_host(current_host_id, decision))
             migrate_to_num = len(self.scheduler.get_migration_to_host(hid, decision))
 
