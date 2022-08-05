@@ -189,7 +189,7 @@ if __name__ == '__main__':
 
         # Start InfluxDB service
         print(
-            color.HEADER + 'InfluxDB service runs as a separate front-end window. Please minimize this window.' + color.ENDC)
+            Color.HEADER + 'InfluxDB service runs as a separate front-end window. Please minimize this window.' + Color.ENDC)
         if 'Windows' in platform.system():
             os.startfile('C:/Program Files/InfluxDB/influxdb-1.8.3-1/influxd.exe')
 
@@ -219,7 +219,7 @@ if __name__ == '__main__':
     datacenter, workload, scheduler, env, stats = initalize_environment(env, logger)
 
     for step in range(NUM_SIM_STEPS):
-        print(color.BOLD + "Simulation Interval:", step, color.ENDC)
+        print(Color.BOLD + "Simulation Interval:", step, Color.ENDC)
         step_simulation(workload, scheduler, env, stats)
         if env != '' and step % 10 == 0:
             save_stats(stats, datacenter, workload, env, end=False)

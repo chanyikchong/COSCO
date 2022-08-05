@@ -1,9 +1,12 @@
 import sys
-from utils.ColorUtils import *
+import re
 from packaging import version
 
+from utils.ColorUtils import *
+
+
 if version.parse(re.findall('([\d.]+).\d', sys.version)[0]) < version.parse('3.6'):
-    print(color.FAIL + 'Python 3.6 or above required!' + color.ENDC)
+    print(Color.FAIL + 'Python 3.6 or above required!' + Color.ENDC)
     exit()
 
 import platform
@@ -26,7 +29,7 @@ import subprocess
 from getpass import getpass
 
 # Install Ansible
-password = getpass(color.BOLD + 'Please enter linux password:' + color.ENDC)
+password = getpass(Color.BOLD + 'Please enter linux password:' + Color.ENDC)
 
 
 def run_cmd_pwd(cmd, password):
@@ -49,7 +52,7 @@ if 'Windows' in platform.system():
     install_dir = 'InfluxDB'
     influxdb_install_path = 'C:/Program Files/' + install_dir
     if not path.exists(influxdb_install_path + '/influxdb-1.8.3-1/influxd.exe'):
-        print(color.HEADER + 'Installing InfluxDB' + color.ENDC)
+        print(Color.HEADER + 'Installing InfluxDB' + Color.ENDC)
         url = 'https://dl.influxdata.com/influxdb/releases/influxdb-1.8.3_windows_amd64.zip'
         mkdir(influxdb_install_path)
         filename = wget.download(url)
@@ -75,7 +78,7 @@ if 'Windows' in platform.system():
         else:  # 32-bit system
             link = 'https://releases.hashicorp.com/vagrant/2.2.10/vagrant_2.2.10_i686.msi'
         filename = wget.download(link)
-        print('\n' + color.HEADER + 'Please follow the prompts for installing Vagrant' + color.ENDC)
+        print('\n' + Color.HEADER + 'Please follow the prompts for installing Vagrant' + Color.ENDC)
         subprocess.call([getcwd() + '/' + filename], shell=True)
         remove(filename)
     set_disk = subprocess.run("setx VAGRANT_EXPERIMENTAL \"disks\"", shell=True, stderr=subprocess.PIPE)
@@ -90,7 +93,7 @@ if 'Windows' in platform.system():
     if 'Could not find' in stdout:
         link = 'https://download.virtualbox.org/virtualbox/6.0.24/VirtualBox-6.0.24-139119-Win.exe'
         filename = wget.download(link)
-        print('\n' + color.HEADER + 'Please follow the prompts for installing VirtualBox' + color.ENDC)
+        print('\n' + Color.HEADER + 'Please follow the prompts for installing VirtualBox' + Color.ENDC)
         subprocess.call([getcwd() + '/' + filename], shell=True)
         remove(filename)
 elif 'Linux' in platform.system():
@@ -108,4 +111,4 @@ run_cmd_pwd("apt-get install ansible -y", password)
 run_cmd_pwd("apt-get install dos2unix -y", password)
 run_cmd_pwd("sudo chmod 400 framework/install_scripts/ssh_keys/id_rsa", password)
 
-print(color.GREEN + "All packages installed." + color.ENDC)
+print(Color.GREEN + "All packages installed." + Color.ENDC)

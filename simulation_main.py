@@ -150,7 +150,7 @@ if __name__ == '__main__':
     datacenter, workload, scheduler, env, stats = initalize_environment()
 
     for step in range(NUM_SIM_STEPS):
-        print(color.BOLD + "Simulation Interval:", step, color.ENDC)
+        print(Color.BOLD + "Simulation Interval:", step, Color.ENDC)
         step_simulation(workload, scheduler, env, stats)
         if env != '' and step % 10 == 0:
             save_stats(stats, datacenter, workload, env, end=False)

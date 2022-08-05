@@ -334,7 +334,7 @@ table = {"Models": Models}
 for ylabel in yLabelsStatic:
     if Models[0] not in Data[ylabel]: continue
     if 'per application' in ylabel: continue
-    print(color.BOLD + ylabel + color.ENDC)
+    print(Color.BOLD + ylabel + Color.ENDC)
     plt.figure(figsize=size)
     plt.xlabel('Model')
     plt.ylabel(ylabel.replace('%', '\%').replace('SLA', 'SLO'))
@@ -362,7 +362,7 @@ for ylabel in yLabelsStatic:
 for ylabel in yLabelsStatic:
     if Models[0] not in Data[ylabel]: continue
     if 'per application' not in ylabel: continue
-    print(color.BOLD + ylabel + color.ENDC)
+    print(Color.BOLD + ylabel + Color.ENDC)
     plt.figure(figsize=size)
     plt.xlabel('Model')
     plt.ylabel(ylabel.replace('%', '\%').replace('SLA', 'SLO'))
@@ -485,7 +485,7 @@ for ylabel in yLabelsStatic:
 for ylabel in yLabelsStatic:
     if Models[0] not in Data[ylabel]: continue
     if 'per application' in ylabel: continue
-    print(color.BLUE + ylabel + color.ENDC)
+    print(Color.BLUE + ylabel + Color.ENDC)
     plt.figure(figsize=size)
     plt.xlabel('Model')
     plt.ylabel(ylabel.replace('%', '\%').replace('SLA', 'SLO'))
@@ -501,7 +501,7 @@ for ylabel in yLabelsStatic:
 for ylabel in yLabelsStatic:
     if Models[0] not in Data[ylabel]: continue
     if 'per application' not in ylabel: continue
-    print(color.BLUE + ylabel + color.ENDC)
+    print(Color.BLUE + ylabel + Color.ENDC)
     plt.figure(figsize=size)
     plt.xlabel('Model')
     plt.ylabel(ylabel.replace('%', '\%').replace('SLA', 'SLO'))
@@ -590,7 +590,7 @@ for ylabel in yLabelsStatic:
 # Time series data
 for ylabel in yLabelsStatic:
     if Models[0] not in Data[ylabel]: continue
-    print(color.GREEN + ylabel + color.ENDC)
+    print(Color.GREEN + ylabel + Color.ENDC)
     plt.figure(figsize=size)
     plt.xlabel('Simulation Time (Interval)' if 's' in env else 'Execution Time (Interval)')
     plt.ylabel(ylabel.replace('%', '\%').replace('SLA', 'SLO'))

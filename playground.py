@@ -15,7 +15,7 @@ import simulator.workload as wl
 from simulator.Simulator import Simulator
 from stats.Stats import Stats
 from utils.Utils import generate_decision_migration_string
-from utils.ColorUtils import color
+from utils.ColorUtils import Color
 
 import scheduler as sc
 
@@ -182,7 +182,7 @@ def main(env_setting, scheduler_dict, mean_container_list, num_seed=10, start_se
                 datacenter, workload, scheduler, env, stats = initalize_environment(env_setting, scheduler, logger)
 
                 for step in range(env_setting.get('num_step')):
-                    logger.info("%sSimulation Interval: %s%s" % (color.BOLD, step, color.ENDC))
+                    logger.info("%sSimulation Interval: %s%s" % (Color.BOLD, step, Color.ENDC))
                     step_simulation(workload, scheduler, env, stats, logger)
 
                 dirname = save_stats(log_file, env_setting, stats, datacenter, workload, env)
