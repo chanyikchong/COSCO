@@ -1,11 +1,4 @@
-import os
-import logging
-import json
-import re
-from subprocess import call
-
-
-class color:
+class Color:
     HEADER = '\033[95m'
     BLUE = '\033[94m'
     GREEN = '\033[92m'
@@ -16,11 +9,13 @@ class color:
     UNDERLINE = '\033[4m'
 
 
-def printDecisionAndMigrations(decision, migrations):
+def print_decision_and_migrations(decision, migrations):
     print('Decision: [', end='')
     for i, d in enumerate(decision):
-        if d not in migrations: print(color.FAIL, end='')
+        if d not in migrations:
+            print(Color.FAIL, end='')
         print(d, end='')
-        if d not in migrations: print(color.ENDC, end='')
+        if d not in migrations:
+            print(Color.ENDC, end='')
         print(',', end='') if i != len(decision) - 1 else print(']')
     print()

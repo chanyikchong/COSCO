@@ -1,12 +1,12 @@
 import os
-from .ColorUtils import color
+from .ColorUtils import Color
 
 
 def generate_decision_migration_string(decisions, migrations):
     sub_string_list = list()
     for i, d in enumerate(decisions):
         if d not in migrations:
-            sub_string = "%s%s%s" % (color.FAIL, str(d), color.ENDC)
+            sub_string = "%s%s%s" % (Color.FAIL, str(d), Color.ENDC)
         else:
             sub_string = str(d)
         sub_string_list.append(sub_string)
