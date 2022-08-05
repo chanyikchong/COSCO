@@ -38,7 +38,7 @@ class Datacenter:
         return data
 
     def generateHosts(self):
-        print(color.HEADER + "Obtaining host information and generating hosts" + color.ENDC)
+        print(Color.HEADER + "Obtaining host information and generating hosts" + Color.ENDC)
         hosts = []
         with open('framework/config/' + self.env + '_config.json', "r") as f:
             config = json.load(f)
@@ -52,7 +52,7 @@ class Datacenter:
         for i, data in enumerate(outputHostsData):
             IP = self.hosts[i]
             logging.error("Host details collected from: {}".format(IP))
-            print(color.BOLD + IP + color.ENDC, data)
+            print(Color.BOLD + IP + Color.ENDC, data)
             IPS = (instructions * config[self.env.lower()]['servers'][i]['cpu']) / (
                     float(data['clock']) * 1000000) if self.env_type == 'Virtual' else data['MIPS']
             Power = eval(powermodels[i] + "()")

@@ -42,7 +42,7 @@ def setupVLANEnvironment(cfg, mode):
     HOST_IPS = [server['ip'] for server in config['vlan']['servers']]
     if mode in [0, 1]:
         MAIN_DIR = os.getcwd().replace('\\', '/').replace('C:', '/mnt/c')
-        password = getpass(color.BOLD + 'Please enter linux password:' + color.ENDC)
+        password = getpass(Color.BOLD + 'Please enter linux password:' + Color.ENDC)
         run_cmd_pwd("rm /etc/ansible/hosts", password)
         run_cmd_pwd("cp framework/install_scripts/ssh_keys/id_rsa ~/id_rsa", password)
         run_cmd_pwd("cp framework/install_scripts/ssh_keys/id_rsa.pub ~/id_rsa.pub", password)
@@ -53,13 +53,19 @@ def setupVLANEnvironment(cfg, mode):
         run_cmd_pwd("cp framework/config/hosts /etc/ansible/hosts", password)
         run_cmd_pwd("cp framework/config/ansible.cfg /etc/ansible/ansible.cfg", password)
         run_cmd("ansible-playbook framework/config/VLAN_ansible.yml")
-    uname = "ansible"
+    uname = config['vlan']['uname']
     for ip in HOST_IPS:
+        # res = os.system(
+        #     "ssh -o StrictHostKeyChecking=no -i framework/install_scripts/ssh_keys/id_rsa " + uname + "@" + ip + " /home/ansible/agent/scripts/delete.sh > /dev/null 2>&1"
+        # )
+        # res = os.system(
+        #     "ssh -o StrictHostKeyChecking=no -i framework/install_scripts/ssh_keys/id_rsa " + uname + "@" + ip + " sudo service docker restart > /dev/null 2>&1"
+        # )
         res = os.system(
-            "ssh -o StrictHostKeyChecking=no -i framework/install_scripts/ssh_keys/id_rsa " + uname + "@" + ip + " /home/ansible/agent/scripts/delete.sh > /dev/null 2>&1"
+            "ssh -o StrictHostKeyChecking=no -i framework/install_scripts/ssh_keys/id_rsa " + uname + "@" + ip + " /home/ansible/agent/scripts/delete.sh"
         )
         res = os.system(
-            "ssh -o StrictHostKeyChecking=no -i framework/install_scripts/ssh_keys/id_rsa " + uname + "@" + ip + " sudo service docker restart > /dev/null 2>&1"
+            "ssh -o StrictHostKeyChecking=no -i framework/install_scripts/ssh_keys/id_rsa " + uname + "@" + ip + " sudo service docker restart"
         )
     return HOST_IPS
 
