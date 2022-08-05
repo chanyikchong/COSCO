@@ -16,7 +16,7 @@ class Framework:
     def __init__(self, Scheduler, ContainerLimit, IntervalTime, hostinit, database, env, logger):
         self.hostlimit = len(hostinit)
         self.scheduler = Scheduler
-        self.scheduler.setEnvironment(self)
+        self.scheduler.set_environment(self)
         self.containerlimit = ContainerLimit
         self.hostlist = []
         self.containerlist = []
@@ -74,7 +74,7 @@ class Framework:
     def getContainersOfHost(self, hostID):
         containers = []
         for container in self.containerlist:
-            if container and container.hostid == hostID:
+            if container and container.host_id == hostID:
                 containers.append(container.id)
         return containers
 
@@ -83,7 +83,7 @@ class Framework:
 
     def getContainerByCID(self, creationID):
         for c in self.containerlist + self.inactiveContainers:
-            if c and c.creationID == creationID:
+            if c and c.creation_id == creationID:
                 return c
 
     def getHostByID(self, hostID):
@@ -157,7 +157,7 @@ class Framework:
         selected = []
         containers = self.db.select("SELECT * FROM CreatedContainers;")
         for container in self.containerlist:
-            if container and container.active and container.getHostID() != -1:
+            if container and container.active and container.get_host_id() != -1:
                 selectable.append(container.id)
         print(selectable)
         return selectable
@@ -169,7 +169,7 @@ class Framework:
         return deployed, destroyed
 
     def getActiveContainerList(self):
-        return [c.getHostID() if c and c.active else -1 for c in self.containerlist]
+        return [c.get_host_id() if c and c.active else -1 for c in self.containerlist]
 
     def getContainersInHosts(self):
         return [len(self.getContainersOfHost(host)) for host in range(self.hostlimit)]

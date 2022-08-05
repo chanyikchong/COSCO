@@ -84,15 +84,15 @@ class Task:
         return self.hostid
 
     def getHost(self):
-        return self.env.getHostByID(self.hostid)
+        return self.env.get_host_by_id(self.hostid)
 
     def allocateAndExecute(self, hostID):
         # self.env.logger.debug("Allocating container "+self.json_body['fields']['name']+" to host "+self.env.getHostByID(hostID).ip)
         self.hostid = hostID
         self.json_body["fields"]["Host_id"] = hostID
-        _, lastMigrationTime = self.env.controller.create(self.json_body, self.env.getHostByID(self.hostid).ip)
+        _, lastMigrationTime = self.env.controller.create(self.json_body, self.env.get_host_by_id(self.hostid).ip)
         self.totalMigrationTime += lastMigrationTime
-        execTime = self.env.intervaltime - lastMigrationTime
+        execTime = self.env.interval_time - lastMigrationTime
         self.totalExecTime += execTime
 
     def allocateAndrestore(self, hostID):
@@ -107,7 +107,7 @@ class Task:
         _, restoreTime = self.env.controller.restore(self.creationID, self.id, self.application, tar_host_ip)
         lastMigrationTime = checkpointTime + migrationTime + restoreTime
         self.totalMigrationTime += lastMigrationTime
-        execTime = self.env.intervaltime - lastMigrationTime
+        execTime = self.env.interval_time - lastMigrationTime
         self.totalExecTime += execTime
 
     def destroy(self):
@@ -121,13 +121,13 @@ class Task:
         self.hostid = -1
 
     def updateUtilizationMetrics(self, data):
-        self.ips = data['cpu'] * self.getHost().ipsCap / 100
-        self.ram.size = data['memory'] * self.getHost().ramCap.size / 100
+        self.ips = data['cpu'] * self.getHost().ips_cap / 100
+        self.ram.size = data['memory'] * self.getHost().ram_cap.size / 100
         if self.lastReadBytes != 0:
-            self.ram.read = (data['read_bytes'] - self.lastReadBytes) / (1024 * 1024 * self.env.intervaltime)
-            self.ram.write = (data['write_bytes'] - self.lastWriteBytes) / (1024 * 1024 * self.env.intervaltime)
-            self.disk.read = (data['read_bytes'] - self.lastReadBytes) / (1024 * 1024 * self.env.intervaltime)
-            self.disk.write = (data['write_bytes'] - self.lastWriteBytes) / (1024 * 1024 * self.env.intervaltime)
+            self.ram.read = (data['read_bytes'] - self.lastReadBytes) / (1024 * 1024 * self.env.interval_time)
+            self.ram.write = (data['write_bytes'] - self.lastWriteBytes) / (1024 * 1024 * self.env.interval_time)
+            self.disk.read = (data['read_bytes'] - self.lastReadBytes) / (1024 * 1024 * self.env.interval_time)
+            self.disk.write = (data['write_bytes'] - self.lastWriteBytes) / (1024 * 1024 * self.env.interval_time)
         self.lastReadBytes = data['read_bytes']
         self.lastWriteBytes = data['write_bytes']
         self.disk.size = float(data['disk'][:-1]) if data['disk'][-1] == 'M' else 1024 * float(data['disk'][:-1])

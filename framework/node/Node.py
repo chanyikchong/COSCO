@@ -25,7 +25,7 @@ class Node:
         self.disk = Disk(0, 0, 0)
         self.json_body = {}
         self.powermodel = Powermodel
-        self.powermodel.allocHost(self)
+        self.powermodel.alloc_host(self)
         self.powermodel.host = self
         self.env = Framework
         self.createHost()
@@ -67,7 +67,7 @@ class Node:
         return self.powermodel.power()
 
     def getPowerFromIPS(self, ips):
-        return self.powermodel.powerFromCPU(min(100, 100 * (ips / self.ipsCap)))
+        return self.powermodel.power_from_cpu(min(100, 100 * (ips / self.ipsCap)))
 
     def getCPU(self):
         # 0 - 100 last interval
@@ -101,7 +101,7 @@ class Node:
         container_data, _ = self.env.controller.getContainerStat(self.ip)
         for container_d in container_data:
             ccid = int(container_d['fields']['name'].split("_")[0])
-            container = self.env.getContainerByCID(ccid)
+            container = self.env.get_container_by_cid(ccid)
             container.updateUtilizationMetrics(container_d['fields'])
         host_data, _ = self.env.controller.gethostStat(self.ip)
         if 'fields' in host_data:
@@ -110,8 +110,8 @@ class Node:
             self.disk.size = host_data['fields']['disk']
         self.ram.read, self.ram.write = 0, 0
         self.disk.read, self.disk.write = 0, 0
-        for cid in self.env.getContainersOfHost(self.id):
-            self.ram.read += self.env.containerlist[cid].ram.read
-            self.disk.read += self.env.containerlist[cid].disk.read
-            self.ram.write += self.env.containerlist[cid].ram.write
-            self.disk.write += self.env.containerlist[cid].ram.write
+        for cid in self.env.get_containers_of_host(self.id):
+            self.ram.read += self.env.container_list[cid].ram.read
+            self.disk.read += self.env.container_list[cid].disk.read
+            self.ram.write += self.env.container_list[cid].ram.write
+            self.disk.write += self.env.container_list[cid].ram.write
