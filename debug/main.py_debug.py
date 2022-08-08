@@ -22,7 +22,7 @@ def initalizeEnvironment(environment, logger):
     scheduler = RandomScheduler()
 
     # Initialize Environment
-    hostlist = datacenter.generateHosts()
+    hostlist = datacenter.generate_hosts()
     if environment != '':
         env = Framework(scheduler, CONTAINERS, INTERVAL_TIME, hostlist, db, environment, logger)
     else:
@@ -42,20 +42,20 @@ def initalizeEnvironment(environment, logger):
     #######
 
     # Execute first step
-    newcontainerinfos = workload.generateNewContainers(env.interval)  # New containers info
-    deployed = env.addContainersInit(newcontainerinfos)  # Deploy new containers and get container IDs
+    newcontainerinfos = workload.generate_new_containers(env.interval)  # New containers info
+    deployed = env.add_containers_init(newcontainerinfos)  # Deploy new containers and get container IDs
     decision = scheduler.placement(deployed)  # Decide placement using container ids
-    migrations = env.allocateInit(decision)  # Schedule containers
-    workload.updateDeployedContainers(
-        env.getCreationIDs(migrations, deployed))  # Update workload allocated using creation IDs
-    print("Deployed containers' creation IDs:", env.getCreationIDs(migrations, deployed))
-    print("Containers in host:", env.getContainersInHosts())
-    print("Schedule:", env.getActiveContainerList())
+    migrations = env.allocate_init(decision)  # Schedule containers
+    workload.update_deployed_containers(
+        env.get_creation_ids(migrations, deployed))  # Update workload allocated using creation IDs
+    print("Deployed containers' creation IDs:", env.get_creation_ids(migrations, deployed))
+    print("Containers in host:", env.get_containers_in_hosts())
+    print("Schedule:", env.get_active_container_list())
     printDecisionAndMigrations(decision, migrations)
 
     # Initialize stats
     stats = Stats(env, workload, datacenter, scheduler)
-    stats.saveStats(deployed, migrations, [], deployed, decision)
+    stats.save_stats(deployed, migrations, [], deployed, decision)
     return datacenter, workload, scheduler, env, stats
 
 
