@@ -41,7 +41,10 @@ class energy_latency_50(nn.Module):
             nn.Sigmoid())
 
     def forward(self, x):
-        x = x.flatten()
+        if x.ndim > 2:
+            x = x.flatten(start_dim=1)
+        else:
+            x = x.flatten()
         x = self.find(x)
         if not ('train' in argv[0] and 'train' in argv[2]):
             x = Coeff_Energy * x[0] + Coeff_Latency * x[1]

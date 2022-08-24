@@ -1,13 +1,22 @@
-from .src.constants import *
-from .src.utils import *
-from .src.models import *
-from .src.ga import *
-from .src.opt import *
+try:
+    from .src.constants import *
+    from .src.utils import *
+    from .src.models import *
+    from .src.ga import *
+    from .src.opt import *
+except:
+    from src.constants import *
+    from src.utils import *
+    from src.models import *
+    from src.ga import *
+    from src.opt import *
 
 from sys import argv, maxsize
 from time import time
 
 import warnings
+
+from torch.utils.data import Dataset, DataLoader
 
 warnings.filterwarnings("ignore")
 
@@ -18,9 +27,24 @@ def custom_loss(y_pred, y_true, model_name):
     return torch.sum((y_pred - y_true) ** 2)
 
 
+class DataSet(Dataset):
+    def __init__(self, data):
+        super(DataSet, self).__init__()
+        self.data = data
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, item):
+        return self.data[item]
+
+
 def backprop(dataset, model, optimizer):
     total = 0
-    for feat in dataset:
+    dataset = DataSet(dataset)
+    dataloader = DataLoader(dataset, batch_size=32, shuffle=False)
+    model.train()
+    for feat in dataloader:
         feature = feat[0]
         feature = torch.tensor(feature, dtype=torch.float)
         y_pred = model(feature)
@@ -36,7 +60,10 @@ def backprop(dataset, model, optimizer):
 
 def accuracy(dataset, model):
     total = 0
-    for feat in dataset:
+    dataset = DataSet(dataset)
+    dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+    model.eval()
+    for feat in dataloader:
         feature = feat[0]
         feature = torch.tensor(feature, dtype=torch.float)
         y_pred = model(feature)
@@ -55,14 +82,14 @@ def save_model(model, optimizer, epoch, accuracy_list):
         'accuracy_list': accuracy_list}, file_path)
 
 
-def load_model(filename, model, data_type):
+def load_model(filename, model, data_type, restart=False):
     optimizer = torch.optim.Adam(model.parameters(), lr=0.0001,
                                  weight_decay=1e-5) if 'stochastic' not in data_type else torch.optim.AdamW(
         model.parameters(), lr=0.0001)
     file_path1 = MODEL_SAVE_PATH + "/" + filename + "_Trained.ckpt"
     file_path2 = 'scheduler/BaGTI/' + file_path1
     file_path = file_path1 if os.path.exists(file_path1) else file_path2
-    if os.path.exists(file_path):
+    if os.path.exists(file_path) and not restart:
         print(color.GREEN + "Loading pre-trained model: " + filename + color.ENDC)
         checkpoint = torch.load(file_path)
         model.load_state_dict(checkpoint['model_state_dict'])
@@ -82,21 +109,22 @@ if __name__ == '__main__':
     exec_type = argv[2]  # can be 'train', ga', 'opt'
 
     model = eval(data_type + "()")
-    model, optimizer, start_epoch, accuracy_list = load_model(data_type, model, data_type)
+    model, optimizer, start_epoch, accuracy_list = load_model(data_type, model, data_type, True)
     dtl = data_type.split('_')
     dataset, dataset_size, _ = eval("load_" + '_'.join(dtl[:-1]) + "_data(" + dtl[-1] + ")")
 
     if exec_type == "train":
         split = int(0.8 * dataset_size)
 
+        random.shuffle(dataset)
+        trainset = dataset[:split]
+        validation = dataset[split:]
+
         for epoch in range(start_epoch + 1, start_epoch + EPOCHS + 1):
             print('EPOCH', epoch)
-            random.shuffle(dataset)
-            trainset = dataset[:split]
-            validation = dataset[split:]
             loss = backprop(trainset, model, optimizer)
             trainAcc, testAcc = float(loss.data), float(accuracy(validation, model).data)
-            accuracy_list.append((testAcc, trainAcc))
+            accuracy_list.append((trainAcc, testAcc))
             print("Loss on train, test =", trainAcc, testAcc)
             if epoch % 10 == 0:
                 save_model(model, optimizer, epoch, accuracy_list)

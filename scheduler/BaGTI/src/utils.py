@@ -128,27 +128,35 @@ def load_stochastic_energy_latency2_data(hosts):
 
 
 def plot_accuracies(accuracy_list, data_type):
+    plt.style.use(['science', 'ieee'])
+    plt.rcParams["text.usetex"] = True
+    plt.rcParams['figure.figsize'] = 2, 1.2
+
+    folder = 'graphs/%s' % data_type
+    if not os.path.exists(folder):
+        os.mkdir(folder)
+
     train_acc = [i[0] for i in accuracy_list]
     test_acc = [i[1] for i in accuracy_list]
     plt.xlabel('Epochs')
     plt.ylabel('Average Training Loss')
     plt.plot(range(len(train_acc)), train_acc, label='Average Training Loss', linewidth=1, linestyle='-', marker='.')
     plt.legend(loc=1)
-    plt.savefig('graphs/' + data_type + '/training-graph.pdf')
+    plt.savefig("%s/training-graph.pdf" % folder)
     plt.clf()
     plt.xlabel('Epochs')
     plt.ylabel('Average Testing Loss')
     plt.errorbar(range(len(test_acc)), test_acc, label='Average Testing Loss', alpha=0.7,
                  linewidth=1, linestyle='dotted', marker='+')
     plt.legend(loc=4)
-    plt.savefig('graphs/' + data_type + '/testing-graph.pdf')
+    plt.savefig('%s/testing-graph.pdf' % folder)
     plt.clf()
     plt.xlabel('Epochs')
     plt.ylabel('Testing Loss')
-    a, b, c = reduce(train_acc)
+    a, b, c = reduce(test_acc)
     b2, _, _ = reduce(b)
     c2, _, _ = reduce(c)
-    plt.fill_between(np.arange(len(train_acc)), b2, c2, color='lightgreen', alpha=.5)
+    plt.fill_between(np.arange(len(test_acc)), b2, c2, color='lightgreen', alpha=.5)
     plt.plot(a, label='Testing Loss', alpha=0.7, color='g',
              linewidth=1, linestyle='-')
-    plt.savefig('graphs/' + data_type + '/reduced.pdf')
+    plt.savefig('%s/reduced.pdf' % folder)
