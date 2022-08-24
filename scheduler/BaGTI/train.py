@@ -70,7 +70,7 @@ def load_model(filename, model, data_type):
         epoch = checkpoint['epoch']
         accuracy_list = checkpoint['accuracy_list']
     else:
-        epoch = -1;
+        epoch = -1
         accuracy_list = []
         print(color.GREEN + "Creating new model: " + model.name + color.ENDC)
     return model, optimizer, epoch, accuracy_list
@@ -105,7 +105,7 @@ if __name__ == '__main__':
 
         plot_accuracies(accuracy_list, data_type)
     else:
-        print(model.find);
+        print(model.find)
         start = time()
         for param in model.parameters(): param.requires_grad = False
         init = torch.tensor(random.choice(dataset)[0], dtype=torch.float, requires_grad=True)
