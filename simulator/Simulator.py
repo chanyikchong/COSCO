@@ -146,9 +146,10 @@ class Simulator:
 
     def add_containers(self, new_container_list):
         self.interval += 1
-        destroyed = self.destroy_completed_containers()
+        # destroyed = self.destroy_completed_containers()  # same on init
         deployed = self.add_container_list(new_container_list)
-        return deployed, destroyed
+        # return deployed, destroyed
+        return deployed
 
     def get_active_container_list(self):
         return [c.get_host_id() if c and c.active else -1 for c in self.container_list]

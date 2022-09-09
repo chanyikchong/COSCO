@@ -53,11 +53,13 @@ class BWGD2(Workload):
             if 500 < ips < 3000:
                 self.possible_indices.append(i)
 
+        self.job_class_num = len(self.possible_indices)
+
     def generate_new_containers(self, interval):
         workload_list = []
-        for i in range(np.random.poisson(lam=self.lam)):
+        for i in range(max(1, np.random.poisson(lam=self.lam))):
             creation_id = self.creation_id
-            index = self.possible_indices[randint(0, len(self.possible_indices) - 1)]
+            index = self.possible_indices[:self.job_class_num][randint(0, self.job_class_num - 1)]
             df = pd.read_csv(self.dataset_path + 'rnd/' + str(index) + '.csv', sep=';\t')
             sla = gauss(self.mean_sla, self.sigma_sla)
             ips_model = IPSMBitbrain((ips_multiplier * df['CPU usage [MHZ]']).to_list(),
@@ -74,3 +76,9 @@ class BWGD2(Workload):
         self.created_containers += workload_list
         self.deployed_containers += [False] * len(workload_list)
         return self.get_undeployed_containers()
+
+    def set_arrival_rate(self, lam):
+        self.lam = lam
+
+    def set_num_job_class(self, num):
+        self.job_class_num = num

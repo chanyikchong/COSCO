@@ -62,6 +62,7 @@ def load_energy_data():
 
 def load_energy_latency_data(hosts):
     dataset_path = 'datasets/energy_latency_' + str(hosts) + '_scheduling.csv'
+    dataset_path = 'datasets/new_data.csv'
     data = pd.read_csv(dataset_path) if os.path.exists(dataset_path) else pd.read_csv('scheduler/BaGTI/' + dataset_path)
     data = data.values.astype(np.float)
     max_ips_container = max(data.max(0)[hosts:2 * hosts])

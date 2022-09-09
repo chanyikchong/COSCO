@@ -1,8 +1,15 @@
-from .src.constants import *
-from .src.utils import *
-from .src.models import *
-from .src.ga import *
-from .src.opt import *
+try:
+    from .src.constants import *
+    from .src.utils import *
+    from .src.models import *
+    from .src.ga import *
+    from .src.opt import *
+except:
+    from src.constants import *
+    from src.utils import *
+    from src.models import *
+    from src.ga import *
+    from src.opt import *
 
 from sys import argv, maxsize
 from time import time
