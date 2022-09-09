@@ -97,7 +97,8 @@ class Stats:
         metrics['num_migrations'] = len(migrations)
         metrics['energy'] = [host.get_power() * self.env.interval_time for host in self.env.host_list]
         metrics['energy_total_interval'] = np.sum(metrics['energy'])
-        metrics['energy_per_container_interval'] = np.sum(metrics['energy']) / self.env.get_num_active_containers()
+        metrics['energy_per_container_interval'] = np.sum(metrics['energy']) / (
+                    self.env.get_num_active_containers() + len(destroyed))
         metrics['response_time'] = [c.total_exec_time + c.total_migration_time for c in destroyed]
         metrics['avg_response_time'] = np.average(metrics['response_time']) if len(destroyed) > 0 else 0
         metrics['migration_time'] = [c.total_migration_time for c in destroyed]
@@ -135,15 +136,21 @@ class Stats:
         metrics['avf_response_time_score_normal'] = avg_response_time_pred
         metrics['fitness'] = score
 
+    def save_input_stats(self, deployed, migrations):
+        self.save_host_info()
+        self.save_workload_info(deployed, migrations)
+        self.save_container_info()
+        self.save_all_container_info()
+
     def save_stats(self, deployed, migrations, destroyed, selected_containers, decision, scheduling_time, **kwargs):
         self.save_host_info()
         self.save_workload_info(deployed, migrations)
         self.save_container_info()
         self.save_all_container_info()
-        self.save_metrics(destroyed, migrations)
+        # self.save_metrics(destroyed, migrations)
         self.save_scheduler_info(selected_containers, decision, scheduling_time)
-        if kwargs.get('fitness'):
-            self.save_fitness(kwargs.get('fitness'))
+        # if kwargs.get('fitness'):
+        #     self.save_fitness(kwargs.get('fitness'))
 
     def _get_power_normalization(self):
         max_power = 0
@@ -301,16 +308,16 @@ class Stats:
         host_alloc_with_interval = list()
         objfunc2_with_interval = list()
         objfunc_with_interval = list()
-        for interval in range(total_intervals - 1):
+        for interval in range(total_intervals):
             metric_with_interval.append(
                 [self.host_info[interval][metric][hostID] for hostID in range(len(self.host_info[0][metric]))])
             host_alloc_with_interval.append([self.active_container_info[interval]['host_alloc'][cID] for cID in
                                              range(len(self.active_container_info[0]['host_alloc']))])  # todo rewrite
-            objfunc_with_interval.append(self.metrics[interval + 1][objfunc])  # we get the destroy before simulation
+            objfunc_with_interval.append(self.metrics[interval][objfunc])  # we get the destroy before simulation
             if metric2:
                 metric2_with_interval.append(self.active_container_info[interval][metric2])
             if objfunc2:
-                objfunc2_with_interval.append(self.metrics[interval + 1][objfunc2])
+                objfunc2_with_interval.append(self.metrics[interval][objfunc2])
         df = pd.DataFrame(metric_with_interval)
         if metric2:
             df = pd.concat([df, pd.DataFrame(metric2_with_interval)], axis=1)

@@ -19,6 +19,48 @@ class GOBI2Scheduler(Scheduler):
             "load_" + '_'.join(dtl[:-1]) + "2_data(" + dtl[-1] + ")")
 
     def run_GOBI2(self):
+        # cpu = [host.get_cpu() / 100 for host in self.env.host_list]
+        # cpu = np.array([cpu]).transpose()
+        # if 'latency' in self.model.name:
+        #     cpu_container = [(c.get_apparent_ips() / self.max_container_ips if c else 0) for c in
+        #                      self.env.container_list]
+        #     cpu_container = np.array([cpu_container]).transpose()
+        #     e, r = (0, 0) if self.env.stats is None else self.env.stats.run_simulation_GOBI()
+        #     pred = np.broadcast_to(np.array([e / self.max_energy, r / self.max_response]), (self.hosts, 2))
+        #     cpu = np.concatenate((cpu, cpu_container, pred), axis=1)
+        # alloc = []
+        # prev_alloc = {}
+        # for c in self.env.container_list:
+        #     one_hot = [0] * len(self.env.host_list)
+        #     if c:
+        #         prev_alloc[c.id] = c.get_host_id()
+        #     if c and c.get_host_id() != -1:
+        #         one_hot[c.get_host_id()] = 1
+        #     else:
+        #         one_hot[np.random.randint(0, len(self.env.host_list))] = 1
+        #     alloc.append(one_hot)
+        # init = np.concatenate((cpu, alloc), axis=1)
+        # init = torch.tensor(init, dtype=torch.float, requires_grad=True)
+
+        init, prev_alloc = self._get_input_features()
+        result, iteration, fitness = opt(init, self.model, [], self.data_type)
+        decision = []
+        for cid in prev_alloc:
+            one_hot = result[cid, -self.hosts:].tolist()
+            new_host = one_hot.index(max(one_hot))
+            if prev_alloc[cid] != new_host:
+                decision.append((cid, new_host))
+        return decision
+
+    def selection(self):
+        return []
+
+    def placement(self, container_ids):
+        first_alloc = np.all([not (c and c.get_host_id() != -1) for c in self.env.container_list])
+        decision = self.run_GOBI2()
+        return decision
+
+    def _get_input_features(self):
         cpu = [host.get_cpu() / 100 for host in self.env.host_list]
         cpu = np.array([cpu]).transpose()
         if 'latency' in self.model.name:
@@ -39,21 +81,11 @@ class GOBI2Scheduler(Scheduler):
             else:
                 one_hot[np.random.randint(0, len(self.env.host_list))] = 1
             alloc.append(one_hot)
-        init = np.concatenate((cpu, alloc), axis=1)
-        init = torch.tensor(init, dtype=torch.float, requires_grad=True)
-        result, iteration, fitness = opt(init, self.model, [], self.data_type)
-        decision = []
-        for cid in prev_alloc:
-            one_hot = result[cid, -self.hosts:].tolist()
-            new_host = one_hot.index(max(one_hot))
-            if prev_alloc[cid] != new_host:
-                decision.append((cid, new_host))
-        return decision
+        features = np.concatenate((cpu, alloc), axis=1)
+        features = torch.tensor(features, dtype=torch.float, requires_grad=True)
+        return features, prev_alloc
 
-    def selection(self):
-        return []
-
-    def placement(self, container_ids):
-        first_alloc = np.all([not (c and c.get_host_id() != -1) for c in self.env.container_list])
-        decision = self.run_GOBI2()
-        return decision
+    def allocation_fitness(self):
+        init, prev_alloc = self._get_input_features()
+        fitness = self.model.detail(init)
+        return fitness
