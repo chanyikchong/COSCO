@@ -162,7 +162,7 @@ def static_main():
     # random.seed(10)
     # torch.manual_seed(10)
 
-    sim_steps = 100
+    sim_steps = 5
     num_hosts = 10 * 5
     container_limit = num_hosts
     total_power = 1000

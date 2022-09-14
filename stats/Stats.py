@@ -309,11 +309,9 @@ class Stats:
         objfunc2_with_interval = list()
         objfunc_with_interval = list()
         for interval in range(total_intervals):
-            metric_with_interval.append(
-                [self.host_info[interval][metric][hostID] for hostID in range(len(self.host_info[0][metric]))])
-            host_alloc_with_interval.append([self.active_container_info[interval]['host_alloc'][cID] for cID in
-                                             range(len(self.active_container_info[0]['host_alloc']))])  # todo rewrite
-            objfunc_with_interval.append(self.metrics[interval][objfunc])  # we get the destroy before simulation
+            metric_with_interval.append(self.host_info[interval][metric])
+            host_alloc_with_interval.append(self.active_container_info[interval]['host_alloc'])
+            objfunc_with_interval.append(self.metrics[interval][objfunc])
             if metric2:
                 metric2_with_interval.append(self.active_container_info[interval][metric2])
             if objfunc2:
@@ -339,10 +337,8 @@ class Stats:
         objfunc2_with_interval = list()
         objfunc_with_interval = list()
         for interval in range(total_intervals - 1):
-            metric_with_interval.append(
-                [self.host_info[interval][metric][hostID] for hostID in range(len(self.host_info[0][metric]))])
-            host_alloc_with_interval.append([self.active_container_info[interval]['host_alloc'][cID] for cID in
-                                             range(len(self.active_container_info[0]['host_alloc']))])
+            metric_with_interval.append(self.host_info[interval][metric])
+            host_alloc_with_interval.append(self.active_container_info[interval]['host_alloc'])
             objfunc_with_interval.append(self.metrics[interval + 1][objfunc])
             metric2_with_interval.append(self.active_container_info[interval][metric2])
             metric3_with_interval.append(self.metrics[interval][metric3])
