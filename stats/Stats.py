@@ -90,13 +90,21 @@ class Stats:
         container_info['active'] = [c.active for c in all_created_containers]
         self.all_container_info.append(container_info)
 
-    def save_metrics(self, destroyed, migrations):
+    def save_energy(self):
         metrics = dict()
         metrics['interval'] = self.env.interval
-        metrics['num_destroyed'] = len(destroyed)
-        metrics['num_migrations'] = len(migrations)
         metrics['energy'] = [host.get_power() * self.env.interval_time for host in self.env.host_list]
         metrics['energy_total_interval'] = np.sum(metrics['energy'])
+        self.metrics.append(metrics)
+
+    def save_metrics(self, destroyed, migrations):
+        # metrics = dict()
+        # metrics['interval'] = self.env.interval
+        metrics = self.metrics[-1]
+        metrics['num_destroyed'] = len(destroyed)
+        metrics['num_migrations'] = len(migrations)
+        # metrics['energy'] = [host.get_power() * self.env.interval_time for host in self.env.host_list]
+        # metrics['energy_total_interval'] = np.sum(metrics['energy'])
         metrics['energy_per_container_interval'] = np.sum(metrics['energy']) / (
                     self.env.get_num_active_containers() + len(destroyed))
         metrics['response_time'] = [c.total_exec_time + c.total_migration_time for c in destroyed]
@@ -217,6 +225,8 @@ class Stats:
                 # get ips并不是模拟host的ips，而是container目前所在host的ips，BUG
                 ips += self.env.container_list[cid].get_apparent_ips()
             energy_total_interval_pred += self.env.host_list[hid].get_power_from_ips(ips)
+
+        # energy 是GOBI + one step Simulation结果，response time为前5 step的均值
         return energy_total_interval_pred * self.env.interval_time, max(0, np.mean(
             [metric_d['avg_response_time'] for metric_d in self.metrics[-5:]]))
 

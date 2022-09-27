@@ -123,6 +123,8 @@ class Simulator:
     def destroy_completed_containers(self):
         destroyed = []
         for i, container in enumerate(self.container_list):
+            if container and container.get_base_ips() != 0:
+                container.get_base_ips()
             if container and container.get_base_ips() == 0:
                 container.destroy()
                 self.container_list[i] = None

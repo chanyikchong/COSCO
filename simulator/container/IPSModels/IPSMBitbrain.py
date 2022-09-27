@@ -15,7 +15,7 @@ class IPSMBitbrain(IPSM):
         if self.total_instructions == 0:
             for ips in self.ips_list[:self.duration]:
                 self.total_instructions += ips * self.container.env.interval_time
-        if self.completed_instructions < self.total_instructions:
+        if self.total_instructions - self.completed_instructions > 1e-6:
             return self.ips_list[(self.container.env.interval - self.container.start_at) % len(self.ips_list)]
         return 0
 

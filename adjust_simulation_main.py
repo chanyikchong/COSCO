@@ -91,6 +91,7 @@ def initalize_environment(num_host, arrival_rate, total_power, router_bw, contai
     print("Deployed:", len(env.get_creation_ids(migrations, deployed)), "of", len(new_container_infos),
           [i[0] for i in new_container_infos])
 
+    stats.save_energy()
     # destroyed finished tasks
     destroyed = env.destroy_completed_containers()
     # save statistical metrics
@@ -130,6 +131,7 @@ def step_simulation(workload, scheduler, env, stats):
     print("Deployed:", len(env.get_creation_ids(migrations, deployed)), "of", len(new_container_infos),
           [i[0] for i in new_container_infos])
 
+    stats.save_energy()
     destroyed = env.destroy_completed_containers()
     stats.save_metrics(destroyed, migrations)
     stats.save_fitness(fitness)
@@ -162,7 +164,7 @@ def static_main():
     # random.seed(10)
     # torch.manual_seed(10)
 
-    sim_steps = 5
+    sim_steps = 1000
     num_hosts = 10 * 5
     container_limit = num_hosts
     total_power = 1000

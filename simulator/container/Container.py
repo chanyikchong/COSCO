@@ -82,6 +82,12 @@ class Container:
         self.ips_model.completed_instructions += apparent_ips * min(exec_time, required_exec_time)
         self.last_migration_time = 0
 
+    def remain_exec_time(self):
+        apparent_ips = self.get_apparent_ips()
+        remain_instructions = self.ips_model.total_instructions - self.ips_model.completed_instructions
+        required_exec_time = remain_instructions / apparent_ips if apparent_ips else 0
+        return required_exec_time
+
     def allocate_execute(self, host_id, alloc_bw):
         self.allocate(host_id, alloc_bw)
         self.execute()
