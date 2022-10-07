@@ -116,7 +116,7 @@ class Stats:
             destroyed) > 0 else 0
         metrics['wait_time'] = [c.start_at - c.create_at for c in destroyed]
         metrics['energy_total_interval_pred'], metrics['avg_response_time_pred'] = self.run_simulation_GOBI()
-        self.metrics.append(metrics)
+        # self.metrics.append(metrics)
 
     def save_scheduler_info(self, selected_containers, decision, scheduling_time):
         scheduler_info = dict()

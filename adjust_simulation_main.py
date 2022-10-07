@@ -53,8 +53,8 @@ def initalize_environment(num_host, arrival_rate, total_power, router_bw, contai
 
     # Initialize scheduler
     # Can be LRMMTR, RF, RL, RM, Random, RLRMMTR, TMCR, TMMR, TMMTR, GA, GOBI (arg = 'energy_latency_'+str(HOSTS))
-    # scheduler = sc.GOBIScheduler('energy_latency_' + str(num_host))  # GOBIScheduler('energy_latency_'+str(HOSTS))
-    scheduler = sc.GOBI2Scheduler('energy_latency_' + str(num_host))
+    scheduler = sc.GOBIScheduler('energy_latency_' + str(num_host))  # GOBIScheduler('energy_latency_'+str(HOSTS))
+    # scheduler = sc.GOBI2Scheduler('energy_latency_' + str(num_host))
     # scheduler = RFScheduler()
 
     # Initialize Environment
@@ -164,13 +164,13 @@ def static_main():
     # random.seed(10)
     # torch.manual_seed(10)
 
-    sim_steps = 1000
+    sim_steps = 1200
     num_hosts = 10 * 5
     container_limit = num_hosts
     total_power = 1000
     router_bw = 10000
     interval_time = 300  # seconds
-    arrival_rate = 0 if num_hosts == 10 else 5
+    arrival_rate = 0 if num_hosts == 10 else 3
 
     datacenter, workload, scheduler, env, stats = initalize_environment(num_hosts, arrival_rate, total_power, router_bw,
                                                                         container_limit, interval_time)
@@ -193,7 +193,7 @@ def dynamic_main():
     # random.seed(10)
     # torch.manual_seed(10)
 
-    sim_steps = 1500
+    sim_steps = 1200
     num_hosts = 10 * 5
     container_limit = num_hosts
     total_power = 1000
@@ -204,6 +204,7 @@ def dynamic_main():
     change_step = 600
 
     arrival_rate_list = [1, 2, 3, 4, 5, 6, 7]
+    arrival_rate_list = [arrival_rate, 5]
     arrival_rate_list.remove(arrival_rate)
     num_job_class = [3, 5, 7, 9]
 
@@ -220,7 +221,7 @@ def dynamic_main():
     for step in range(sim_steps):
         if step > change_step:
             change_step = np.inf
-        # if random.random() < change_probability:
+            # if random.random() < change_probability:
             new_ar = random.choice(arrival_rate_list)
             arrival_rate_list.remove(new_ar)
             arrival_rate_list.append(arrival_rate)
@@ -238,5 +239,5 @@ def dynamic_main():
 
 
 if __name__ == '__main__':
-    static_main()
-    # dynamic_main()
+    # static_main()
+    dynamic_main()
