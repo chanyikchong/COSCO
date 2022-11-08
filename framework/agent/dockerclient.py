@@ -26,7 +26,7 @@ class DockerClient:
         image = config["image"]
         try:
             if 'shreshthtuli' in image:
-                containerid = self.dclient.containers.run(image=image, tty=True, detach=True, name=name)
+                container_id = self.dclient.containers.run(image=image, tty=True, detach=True, name=name)
             else:
                 cmd = f"docker run -itd --name {name} shreshthtuli/aiotbench 'python3' 'main.py' '{image}'"
                 cid = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).communicate()[0].decode('utf-8').strip()
@@ -66,11 +66,11 @@ class DockerClient:
             rc = codes.FAILED
         return rc, json.dumps({"rc": rc})
 
-    def listContainers(self):
-        containerList = []
+    def list_containers(self):
+        container_list = []
         rc = codes.SUCCESS
         try:
-            containerList = self.dclient.containers.list()
+            container_list = self.dclient.containers.list()
         except docker.errors.NotFound as err:
             rc = codes.NOT_FOUND
             logging.error(err)
@@ -78,25 +78,25 @@ class DockerClient:
             rc = codes.FAILED
             logging.error(e)
         else:
-            return rc, containerList
+            return rc, container_list
 
-    def inspectContainer(self, containerId):
-        containerInfo = dict()
+    def inspectContainer(self, container_id):
+        container_info = dict()
         rc = codes.SUCCESS
         try:
-            containerInfo = self.dclient1.inspect_container(containerId)
+            container_info = self.dclient1.inspect_container(container_id)
         except docker.errors.NotFound as err:
             rc = codes.NOT_FOUND
             logging.error(err)
         except requests.exceptions.ConnectionError as e:
             rc = codes.FAILED
             logging.error(e)
-        return rc, json.dumps(containerInfo)
+        return rc, json.dumps(container_info)
 
-    def stats(self, containerId):
+    def stats(self, container_id):
         rc = codes.SUCCESS
         try:
-            data = self.dclient1.stats(container=containerId, decode=None, stream=False)
+            data = self.dclient1.stats(container=container_id, decode=None, stream=False)
         except docker.errors.NotFound as err:
             rc = codes.NOT_FOUND
         except requests.exceptions.ConnectionError as err:

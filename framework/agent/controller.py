@@ -21,7 +21,7 @@ logging.basicConfig(filename='COSCO.log', level=logging.DEBUG,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
 
-class RequestRouter():
+class RequestRouter:
     def __init__(self, config):
         self.container_client = DockerClient(config["dockerurl"])
         self.hostIP = config["hostIP"]
