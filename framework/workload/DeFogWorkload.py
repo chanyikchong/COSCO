@@ -1,8 +1,7 @@
-from .Workload import *
-from datetime import datetime
-from framework.database.Database import *
-from random import gauss, choices
+import numpy as np
 import random
+
+from .Workload import Workload
 
 
 class DFW(Workload):
@@ -12,16 +11,15 @@ class DFW(Workload):
         self.std_dev = std_dev
         self.db = database
 
-    def generateNewContainers(self, interval):
-        workloadlist = []
-        containers = []
+    def generate_new_containers(self, interval):
+        workload_list = list()
         applications = ['shreshthtuli/yolo', 'shreshthtuli/pocketsphinx', 'shreshthtuli/aeneas']
-        for i in range(max(1, int(gauss(self.num_workloads, self.std_dev)))):
-            CreationID = self.creation_id
-            SLA = np.random.randint(5, 8)  ## Update this based on intervals taken
+        for i in range(max(1, int(random.gauss(self.num_workloads, self.std_dev)))):
+            creation_id = self.creation_id
+            sla = np.random.randint(5, 8)  # Update this based on intervals taken
             application = random.choices(applications, weights=[0.2, 0.4, 0.4])[0]
-            workloadlist.append((CreationID, interval, SLA, application))
+            workload_list.append((creation_id, interval, sla, application))
             self.creation_id += 1
-        self.createdContainers += workloadlist
-        self.deployedContainers += [False] * len(workloadlist)
-        return self.getUndeployedContainers()
+        self.created_containers += workload_list
+        self.deployed_containers += [False] * len(workload_list)
+        return self.get_undeployed_containers()

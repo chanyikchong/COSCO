@@ -1,23 +1,17 @@
-import numpy as np
-import json
-from framework.server.restClient import *
-import subprocess
+import multiprocessing
 import requests
 import logging
-import os
-import platform
-from metrics.powermodels.PMRaspberryPi import *
-from metrics.powermodels.PMB2s import *
-from metrics.powermodels.PMB4ms import *
-from metrics.powermodels.PMB8ms import *
-from metrics.powermodels.PMXeon_X5570 import *
-from metrics.Disk import *
-from metrics.RAM import *
-from metrics.Bandwidth import *
-from utils.Utils import *
+import json
 
-import multiprocessing
 from joblib import Parallel, delayed
+import platform
+
+from metrics.powermodels import *  # import power models
+from metrics.Disk import Disk
+from metrics.RAM import RAM
+from metrics.Bandwidth import Bandwidth
+from utils.Utils import Color
+
 
 num_cores = multiprocessing.cpu_count()
 
@@ -30,34 +24,36 @@ class Datacenter:
         self.env_type = env_type
         self.types = {'Power': [1]}
 
-    def parallelizedFunc(self, IP):
+    def parallelized_func(self, ip):
         payload = {"opcode": "hostDetails" + self.env_type}
         # todo how to get the information
-        resp = requests.get("http://" + IP + ":8081/request", data=json.dumps(payload))
+        resp = requests.get("http://" + ip + ":8081/request", data=json.dumps(payload))
         data = json.loads(resp.text)
         return data
 
-    def generateHosts(self):
+    def generate_hosts(self):
         print(Color.HEADER + "Obtaining host information and generating hosts" + Color.ENDC)
         hosts = []
         with open('framework/config/' + self.env + '_config.json', "r") as f:
             config = json.load(f)
-        powermodels = [server["powermodel"] for server in config[self.env.lower()]['servers']]
-        if self.env_type == 'Virtual':
-            with open('framework/server/scripts/instructions_arch.json') as f:
-                arch_dict = json.load(f)
-            instructions = arch_dict[platform.machine()]
+        power_models = [server["powermodel"] for server in config[self.env.lower()]['servers']]
+        # if self.env_type == 'Virtual':
+        # -->
+        with open('framework/server/scripts/instructions_arch.json') as f:
+            arch_dict = json.load(f)
+        instructions = arch_dict[platform.machine()]
+
         # get information of the host
-        outputHostsData = Parallel(n_jobs=num_cores)(delayed(self.parallelizedFunc)(i) for i in self.hosts)
-        for i, data in enumerate(outputHostsData):
-            IP = self.hosts[i]
-            logging.error("Host details collected from: {}".format(IP))
-            print(Color.BOLD + IP + Color.ENDC, data)
-            IPS = (instructions * config[self.env.lower()]['servers'][i]['cpu']) / (
+        output_hosts_data = Parallel(n_jobs=num_cores)(delayed(self.parallelized_func)(i) for i in self.hosts)
+        for i, data in enumerate(output_hosts_data):
+            ip = self.hosts[i]
+            logging.error("Host details collected from: {}".format(ip))
+            print(Color.BOLD + ip + Color.ENDC, data)
+            ips = (instructions * config[self.env.lower()]['servers'][i]['cpu']) / (
                     float(data['clock']) * 1000000) if self.env_type == 'Virtual' else data['MIPS']
-            Power = eval(powermodels[i] + "()")
-            Ram = RAM(data['Total_Memory'], data['Ram_read'], data['Ram_write'])
-            Disk_ = Disk(data['Total_Disk'], data['Disk_read'], data['Disk_write'])
-            Bw = Bandwidth(data['Bandwidth'], data['Bandwidth'])
-            hosts.append((IP, IPS, Ram, Disk_, Bw, Power))
+            power = eval(power_models[i] + "()")
+            ram = RAM(data['Total_Memory'], data['Ram_read'], data['Ram_write'])
+            disk_ = Disk(data['Total_Disk'], data['Disk_read'], data['Disk_write'])
+            bw = Bandwidth(data['Bandwidth'], data['Bandwidth'])
+            hosts.append((ip, ips, ram, disk_, bw, power))
         return hosts

@@ -12,12 +12,11 @@ REQUEST_TEMPLATE = Template("http://$HOST:$PORT/request")
 CONTAINER_PORT = 8081
 
 
-def HandleRequest(payload, host, framework):
-    resp = ""
-    clientUrl = REQUEST_TEMPLATE.substitute(HOST=host, PORT=CONTAINER_PORT)
-    print(json.dumps(payload), clientUrl)
+def handle_request(payload, host, framework):
+    client_url = REQUEST_TEMPLATE.substitute(HOST=host, PORT=CONTAINER_PORT)
+    print(json.dumps(payload), client_url)
     try:
-        resp = requests.get(clientUrl, data=json.dumps(payload), timeout=360)
+        resp = requests.get(client_url, data=json.dumps(payload), timeout=360)
     except Exception as e:
         resp = InvalidResponse()
         resp.text = json.dumps({'server_error': str(e) + ' for payload = ' + json.dumps(payload)})

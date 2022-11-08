@@ -1,10 +1,10 @@
-from framework.node.Node import *
-from framework.task.Task import *
-from framework.server.controller import *
 from time import time, sleep
-from pdb import set_trace as bp
 import multiprocessing
 from joblib import Parallel, delayed
+
+from framework.node.Node import Node
+from framework.task.Task import Task
+from framework.server.controller import RequestHandler
 
 num_cores = multiprocessing.cpu_count()
 
@@ -13,179 +13,183 @@ class Framework:
     # Total power in watt
     # Total Router Bw
     # Interval Time in seconds
-    def __init__(self, Scheduler, ContainerLimit, IntervalTime, hostinit, database, env, logger):
-        self.hostlimit = len(hostinit)
-        self.scheduler = Scheduler
+    def __init__(self, scheduler, container_limit, interval_time, host_init, database, env, logger):
+        self.host_limit = len(host_init)
+        self.scheduler = scheduler
         self.scheduler.set_environment(self)
-        self.containerlimit = ContainerLimit
-        self.hostlist = []
-        self.containerlist = []
-        self.intervaltime = IntervalTime
+        self.container_limit = container_limit
+        self.host_list = list()
+        self.container_list = list()
+        self.interval_time = interval_time
         self.interval = 0
         self.db = database
-        self.inactiveContainers = []
+        self.inactive_containers = list()
         self.logger = logger
         self.stats = None
         self.environment = env
         self.controller = RequestHandler(self.db, self)
-        self.addHostlistInit(hostinit)
-        self.globalStartTime = time()
-        self.intervalAllocTimings = []
+        self.add_host_list_init(host_init)
+        self.global_start_time = time()
+        self.interval_alloc_timings = list()
 
-    def addHostInit(self, IP, IPS, RAM, Disk, Bw, Powermodel):
-        assert len(self.hostlist) < self.hostlimit
-        host = Node(len(self.hostlist), IP, IPS, RAM, Disk, Bw, Powermodel, self)
-        self.hostlist.append(host)
+    def add_host_init(self, ip, ips, ram, disk, bw, power_model):
+        assert len(self.host_list) < self.host_limit
+        host = Node(len(self.host_list), ip, ips, ram, disk, bw, power_model, self)
+        self.host_list.append(host)
 
-    def addHostlistInit(self, hostList):
-        assert len(hostList) == self.hostlimit
-        for IP, IPS, RAM, Disk, Bw, Powermodel in hostList:
-            self.addHostInit(IP, IPS, RAM, Disk, Bw, Powermodel)
+    def add_host_list_init(self, host_list):
+        assert len(host_list) == self.host_limit
+        for ip, ips, ram, disk, bw, power_model in host_list:
+            self.add_host_init(ip, ips, ram, disk, bw, power_model)
 
-    def addContainerInit(self, CreationID, CreationInterval, SLA, Application):
-        container = Task(len(self.containerlist), CreationID, CreationInterval, SLA, Application, self, HostID=-1)
-        self.containerlist.append(container)
+    def add_container_init(self, creation_id, creation_interval, sla, application):
+        container = Task(len(self.container_list), creation_id, creation_interval, sla, application, self, host_id=-1)
+        self.container_list.append(container)
         return container
 
-    def addContainerListInit(self, containerInfoList):
-        deployed = containerInfoList[:min(len(containerInfoList), self.containerlimit - self.getNumActiveContainers())]
-        deployedContainers = []
-        for CreationID, CreationInterval, SLA, Application in deployed:
-            dep = self.addContainerInit(CreationID, CreationInterval, SLA, Application)
-            deployedContainers.append(dep)
-        self.containerlist += [None] * (self.containerlimit - len(self.containerlist))
-        return [container.id for container in deployedContainers]
+    def add_container_list_init(self, container_info_list):
+        deployed = container_info_list[
+                   :min(len(container_info_list), self.container_limit - self.get_num_active_containers())]
+        deployed_containers = list()
+        for creation_id, creation_interval, sla, application in deployed:
+            dep = self.add_container_init(creation_id, creation_interval, sla, application)
+            deployed_containers.append(dep)
+        self.container_list += [None] * (self.container_limit - len(self.container_list))
+        return [container.id for container in deployed_containers]
 
-    def addContainer(self, CreationID, CreationInterval, SLA, Application):
-        for i, c in enumerate(self.containerlist):
-            if c == None or not c.active:
-                container = Task(i, CreationID, CreationInterval, SLA, Application, self, HostID=-1)
-                self.containerlist[i] = container
+    def add_container(self, creation_id, creation_interval, sla, application):
+        for i, c in enumerate(self.container_list):
+            if c is None or not c.active:
+                container = Task(i, creation_id, creation_interval, sla, application, self, host_id=-1)
+                self.container_list[i] = container
                 return container
 
-    def addContainerList(self, containerInfoList):
-        deployed = containerInfoList[:min(len(containerInfoList), self.containerlimit - self.getNumActiveContainers())]
-        deployedContainers = []
-        for CreationID, CreationInterval, SLA, Application in deployed:
-            dep = self.addContainer(CreationID, CreationInterval, SLA, Application)
-            deployedContainers.append(dep)
-        return [container.id for container in deployedContainers]
+    def add_container_list(self, container_info_list):
+        deployed = container_info_list[
+                   :min(len(container_info_list), self.container_limit - self.get_num_active_containers())]
+        deployed_containers = list()
+        for creation_id, creation_interval, sla, application in deployed:
+            dep = self.add_container(creation_id, creation_interval, sla, application)
+            deployed_containers.append(dep)
+        return [container.id for container in deployed_containers]
 
-    def getContainersOfHost(self, hostID):
-        containers = []
-        for container in self.containerlist:
-            if container and container.host_id == hostID:
+    def get_containers_of_host(self, host_id):
+        containers = list()
+        for container in self.container_list:
+            if container and container.host_id == host_id:
                 containers.append(container.id)
         return containers
 
-    def getContainerByID(self, containerID):
-        return self.containerlist[containerID]
+    def get_container_by_id(self, container_id):
+        return self.container_list[container_id]
 
-    def getContainerByCID(self, creationID):
-        for c in self.containerlist + self.inactiveContainers:
-            if c and c.creation_id == creationID:
+    def get_container_by_cid(self, creation_id):
+        for c in self.container_list + self.inactive_containers:
+            if c and c.creation_id == creation_id:
                 return c
 
-    def getHostByID(self, hostID):
-        return self.hostlist[hostID]
+    def get_host_by_id(self, host_id):
+        return self.host_list[host_id]
 
-    def getCreationIDs(self, migrations, containerIDs):
-        creationIDs = []
+    def get_creation_ids(self, migrations, container_ids):
+        creation_ids = list()
         for decision in migrations:
-            if decision[0] in containerIDs: creationIDs.append(self.containerlist[decision[0]].creationID)
-        return creationIDs
+            if decision[0] in container_ids:
+                creation_ids.append(self.container_list[decision[0]].creation_id)
+        return creation_ids
 
-    def getPlacementPossible(self, containerID, hostID):
-        container = self.containerlist[containerID]
-        host = self.hostlist[hostID]
-        ipsreq = container.getBaseIPS()
-        ramsizereq, _, _ = container.getRAM()
-        disksizereq, _, _ = container.getDisk()
-        ipsavailable = host.getIPSAvailable()
-        ramsizeav, ramreadav, ramwriteav = host.getRAMAvailable()
-        disksizeav, diskreadav, diskwriteav = host.getDiskAvailable()
-        return (ipsreq <= ipsavailable and \
-                ramsizereq <= ramsizeav and \
-                disksizereq <= disksizeav)
+    def get_placement_possible(self, container_id, host_id):
+        container = self.container_list[container_id]
+        host = self.host_list[host_id]
+        ips_req = container.get_base_ips()
+        ram_size_req, _, _ = container.get_ram()
+        disk_size_req, _, _ = container.get_disk()
+        ips_available = host.get_ips_available()
+        ram_size_av, ram_read_av, ram_write_av = host.get_ram_available()
+        disk_size_av, disk_read_av, disk_write_av = host.get_disk_available()
+        return (ips_req <= ips_available and
+                ram_size_req <= ram_size_av and
+                disk_size_req <= disk_size_av)
 
-    def addContainersInit(self, containerInfoListInit):
+    def add_containers_init(self, container_info_list_init):
         self.interval += 1
-        deployed = self.addContainerListInit(containerInfoListInit)
+        deployed = self.add_container_list_init(container_info_list_init)
         return deployed
 
-    def allocateInit(self, decision):
+    def allocate_init(self, decision):
         start = time()
-        migrations = []
+        migrations = list()
         for (cid, hid) in decision:
-            container = self.getContainerByID(cid)
-            assert container.getHostID() == -1 and hid != -1
-            if self.getPlacementPossible(cid, hid):
+            container = self.get_container_by_id(cid)
+            assert container.get_host_id() == -1 and hid != -1
+            if self.get_placement_possible(cid, hid):
                 migrations.append((cid, hid))
-                container.allocateAndExecute(hid)
+                container.allocate_and_execute(hid)
             # destroy pointer to this unallocated container as book-keeping is done by workload model
             else:
-                self.containerlist[cid] = None
-        self.intervalAllocTimings.append(time() - start)
+                self.container_list[cid] = None
+        self.interval_alloc_timings.append(time() - start)
         self.logger.debug("First allocation: " + str(decision))
         self.logger.debug(
-            'Interval allocation time for interval ' + str(self.interval) + ' is ' + str(self.intervalAllocTimings[-1]))
+            'Interval allocation time for interval ' + str(self.interval) + ' is ' + str(self.interval_alloc_timings[-1]))
         print(
-            'Interval allocation time for interval ' + str(self.interval) + ' is ' + str(self.intervalAllocTimings[-1]))
-        self.visualSleep(self.intervaltime - self.intervalAllocTimings[-1])
-        for host in self.hostlist:
-            host.updateUtilizationMetrics()
+            'Interval allocation time for interval ' + str(self.interval) + ' is ' + str(self.interval_alloc_timings[-1]))
+        self.visual_sleep(self.interval_time - self.interval_alloc_timings[-1])
+        for host in self.host_list:
+            host.update_utilization_metrics()
         return migrations
 
-    def destroyCompletedContainers(self):
+    def destroy_completed_containers(self):
         destroyed = []
-        for i, container in enumerate(self.containerlist):
+        for i, container in enumerate(self.container_list):
             if container and not container.active:
                 container.destroy()
-                self.containerlist[i] = None
-                self.inactiveContainers.append(container)
+                self.container_list[i] = None
+                self.inactive_containers.append(container)
                 destroyed.append(container)
         return destroyed
 
-    def getNumActiveContainers(self):
+    def get_num_active_containers(self):
         num = 0
-        for container in self.containerlist:
-            if container and container.active: num += 1
+        for container in self.container_list:
+            if container and container.active:
+                num += 1
         return num
 
-    def getSelectableContainers(self):
-        selectable = []
-        selected = []
-        containers = self.db.select("SELECT * FROM CreatedContainers;")
-        for container in self.containerlist:
+    def get_selectable_containers(self):
+        selectable = list()
+        # selected = list()
+        # containers = self.db.select("SELECT * FROM CreatedContainers;")
+        for container in self.container_list:
             if container and container.active and container.get_host_id() != -1:
                 selectable.append(container.id)
         print(selectable)
         return selectable
 
-    def addContainers(self, newContainerList):
+    def add_containers(self, new_container_list):
         self.interval += 1
-        destroyed = self.destroyCompletedContainers()
-        deployed = self.addContainerList(newContainerList)
+        destroyed = self.destroy_completed_containers()
+        deployed = self.add_container_list(new_container_list)
         return deployed, destroyed
 
-    def getActiveContainerList(self):
-        return [c.get_host_id() if c and c.active else -1 for c in self.containerlist]
+    def get_active_container_list(self):
+        return [c.get_host_id() if c and c.active else -1 for c in self.container_list]
 
-    def getContainersInHosts(self):
-        return [len(self.getContainersOfHost(host)) for host in range(self.hostlimit)]
+    def get_containers_in_hosts(self):
+        return [len(self.get_containers_of_host(host)) for host in range(self.host_limit)]
 
-    def parallelizedFunc(self, i):
+    def parallelized_func(self, i):
         cid, hid = i
-        container = self.getContainerByID(cid)
-        if self.containerlist[cid].hostid != -1:
-            # for migration
-            # container.allocateAndrestore(hid)
-            pass
+        container = self.get_container_by_id(cid)
+        if self.container_list[cid].host_id != -1:
+            # raspi cannot migrate a container, uncomment this after this problem solved
+            # container.allocate_and_restore(hid)
+            container.allocate_and_execute(hid)
         else:
-            container.allocateAndExecute(hid)
+            container.allocate_and_execute(hid)
         return container
 
-    def visualSleep(self, t):
+    def visual_sleep(self, t):
         total = str(int(t // 60)) + " min, " + str(t % 60) + " sec"
         for i in range(int(t)):
             print("\r>> Interval timer " + str(i // 60) + " min, " + str(i % 60) + " sec of " + total, end=' ')
@@ -193,30 +197,36 @@ class Framework:
         sleep(t % 1)
         print()
 
-    def simulationStep(self, decision):
+    def simulation_step(self, decision):
         start = time()
-        migrations = []
-        containerIDsAllocated = []
-        # bp()
+        migrations = list()
+        container_ids_allocated = list()
         print(decision)
         for (cid, hid) in decision:
-            container = self.getContainerByID(cid)
-            currentHostID = self.getContainerByID(cid).getHostID()
-            currentHost = self.getHostByID(currentHostID)
-            targetHost = self.getHostByID(hid)
-            if hid != self.containerlist[cid].hostid and self.getPlacementPossible(cid, hid):
-                containerIDsAllocated.append(cid)
+            container = self.get_container_by_id(cid)
+            current_host_id = self.get_container_by_id(cid).get_host_id()
+            current_host = self.get_host_by_id(current_host_id)
+            target_host = self.get_host_by_id(hid)
+            if hid != self.container_list[cid].host_id and self.get_placement_possible(cid, hid):
+                container_ids_allocated.append(cid)
                 migrations.append((cid, hid))
-        Parallel(n_jobs=num_cores, backend='threading')(delayed(self.parallelizedFunc)(i) for i in migrations)
+        Parallel(n_jobs=num_cores, backend='threading')(delayed(self.parallelized_func)(i) for i in migrations)
         for (cid, hid) in decision:
-            if self.containerlist[cid].hostid == -1: self.containerlist[cid] = None
-        self.intervalAllocTimings.append(time() - start)
+            if self.container_list[cid].host_id == -1:
+                self.container_list[cid] = None
+        self.interval_alloc_timings.append(time() - start)
         self.logger.debug("Decision: " + str(decision))
         self.logger.debug(
-            'Interval allocation time for interval ' + str(self.interval) + ' is ' + str(self.intervalAllocTimings[-1]))
+            'Interval allocation time for interval ' + str(self.interval) + ' is ' + str(self.interval_alloc_timings[-1]))
         print(
-            'Interval allocation time for interval ' + str(self.interval) + ' is ' + str(self.intervalAllocTimings[-1]))
-        self.visualSleep(max(0, self.intervaltime - self.intervalAllocTimings[-1]))
-        for host in self.hostlist:
-            host.updateUtilizationMetrics()
+            'Interval allocation time for interval ' + str(self.interval) + ' is ' + str(self.interval_alloc_timings[-1]))
+        self.visual_sleep(max(0, self.interval_time - self.interval_alloc_timings[-1]))
+        for host in self.host_list:
+            host.update_utilization_metrics()
         return migrations
+
+    def __del__(self):
+        for container in self.container_list:
+            if container is not None:
+                container.active = False
+                container.destroy()

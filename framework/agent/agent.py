@@ -14,6 +14,7 @@ from flask_restful import reqparse, abort, Api, Resource
 from flask.helpers import make_response
 import codes
 import controller
+import netifaces as ni
 
 app = Flask(__name__)
 api = Api(app)
@@ -22,7 +23,7 @@ api = Api(app)
 class RequestHandler(Resource):
     def get(self):
         reqData = request.get_json(force=True)
-        rc, data = reqHandler.handleRequestOp(reqData)
+        rc, data = reqHandler.handle_request_op(reqData)
         return make_response(data, codes.herror(rc))
 
 
@@ -32,9 +33,12 @@ if __name__ == '__main__':
     cfg = dict()
     cfg["dockerurl"] = 'unix://var/run/docker.sock'
     port = 8081
-    network = (subprocess.run("ip -o -4 addr show | awk '{print $1, $2, $4}'| grep 192.168.0", shell=True,
+    ipaddr = requests.get('https://api.ipify.org').content.decode('utf8')
+    # ipaddr = ni.ifaddresses('wlan0')[ni.AF_INET][0]['addr']
+    network = (subprocess.run("ip -o -4 addr show | awk '{print $1, $2, $4}'| grep %s" % ipaddr, shell=True,
                               stdout=subprocess.PIPE)).stdout.decode()
-    ipaddr = network.split(' ')[2].split('/')[0]
+    # network = (subprocess.run("ip -o -4 addr show | awk '{print $1, $2, $4}'| grep 192.168.0", shell=True,stdout=subprocess.PIPE)).stdout.decode()
+    # ipaddr = network.split(' ')[2].split('/')[0]
     cfg["interface"] = network.split(' ')[1]
     cfg["hostIP"] = ipaddr
     reqHandler = controller.RequestRouter(cfg)
@@ -42,6 +46,7 @@ if __name__ == '__main__':
         app.run(
             host=ipaddr,
             port=int(port),
+            debug=False,
             threaded=True
         )
     except socket.error as msg:

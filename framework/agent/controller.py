@@ -11,18 +11,19 @@ import subprocess
 import logging
 import requests
 import codes
-import dockerclient
 import psutil
 import time
 import re
+
+from dockerclient import DockerClient
 
 logging.basicConfig(filename='COSCO.log', level=logging.DEBUG,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
 
-class RequestRouter:
+class RequestRouter():
     def __init__(self, config):
-        self.containerClient = dockerclient.DockerClient(config["dockerurl"])
+        self.container_client = DockerClient(config["dockerurl"])
         self.hostIP = config["hostIP"]
         self.interface = config["interface"]
 
@@ -35,18 +36,23 @@ class RequestRouter:
             val /= 1000
         return val * 1.048576
 
-    def hostDetailsVirtual(self):
+    def host_details_virtual(self):
         rc = codes.SUCCESS
         memory = psutil.virtual_memory()
         disk = psutil.disk_usage('/')
         data = subprocess.run("./scripts/calIPS_clock.sh", shell=True, stdout=subprocess.PIPE)
         data = (data.stdout.decode()).splitlines()
-        bw = ((subprocess.run("sudo ethtool " + self.interface + " | grep Speed", shell=True,
-                              stdout=subprocess.PIPE)).stdout.decode()).split()[1][0:4]
+        if self.interface == 'eth0':
+            bw = ((subprocess.run("ethtool " + self.interface + " | grep Speed", shell=True,
+                                  stdout=subprocess.PIPE)).stdout.decode()).split()[1]
+        else:
+            bw = ((subprocess.run("iwconfig " + self.interface + " | grep Bit\ Rate", shell=True,
+                                  stdout=subprocess.PIPE)).stdout.decode()).split()[1]
+        bw = re.findall(r'([\d.]*\d+)', bw)[0]
         payload = {
             "Total_Memory": int(float(memory.total / (1024 * 1024))),
             "Total_Disk": int(float(disk.total / (1024 * 1024))),
-            "Bandwidth": int(bw),
+            "Bandwidth": int(float(bw)),
             "clock": data[0],
             "Ram_read": self.parse_io(data[3]),
             "Ram_write": self.parse_io(data[4]),
@@ -55,7 +61,7 @@ class RequestRouter:
         data = json.dumps(payload)
         return rc, data
 
-    def hostDetailsPhysical(self):
+    def host_details_physical(self):
         rc = codes.SUCCESS
         memory = psutil.virtual_memory()
         disk = psutil.disk_usage('/')
@@ -75,7 +81,7 @@ class RequestRouter:
         data = json.dumps(payload)
         return rc, data
 
-    def gethostStat(self):
+    def get_host_stat(self):
         rc = codes.SUCCESS
         cpu = psutil.cpu_percent()
         memory = psutil.virtual_memory()[2]
@@ -86,18 +92,18 @@ class RequestRouter:
         data = json.dumps(payload)
         return rc, data
 
-    def getContainersStat(self):
+    def get_containers_stat(self):
         Stats = {}
         rc = codes.SUCCESS
         Stats['time-stamp'] = time.time()
         Stats['hostIP'] = self.hostIP
         Stat = []
-        containers = self.containerClient.dclient1.containers(all=True)
+        containers = self.container_client.dclient1.containers(all=True)
         for container in containers:
             c_id = container['Id']
             c_name = container['Names'][0].replace('/', '')
-            _, stats = self.containerClient.stats(c_id)
-            inspect_data = self.containerClient.dclient1.inspect_container(c_id)['State']
+            _, stats = self.container_client.stats(c_id)
+            inspect_data = self.container_client.dclient1.inspect_container(c_id)['State']
             read_bytes = stats['blkio_stats']['io_service_bytes_recursive'][0]['value'] if stats['blkio_stats'][
                 'io_service_bytes_recursive'] else 0
             write_bytes = stats['blkio_stats']['io_service_bytes_recursive'][1]['value'] if stats['blkio_stats'][
@@ -156,18 +162,18 @@ class RequestRouter:
         data = json.dumps(Stats)
         return rc, data
 
-    def handleRequestOp(self, payload):
+    def handle_request_op(self, payload):
         opcode = payload["opcode"]
         logging.debug('Got Opcode')
         logging.debug('Data = ' + str(payload))
         if opcode == "create":
-            return self.containerClient.create(payload)
+            return self.container_client.create(payload)
         elif opcode == "start":
-            return self.containerClient.start(payload["name"])
+            return self.container_client.start(payload["name"])
         elif opcode == "stop":
-            return self.containerClient.stop(payload["name"])
+            return self.container_client.stop(payload["name"])
         elif opcode == "delete":
-            return self.containerClient.delete(payload["name"])
+            return self.container_client.delete(payload["name"])
         elif opcode == "checkpoint":
             return self.checkpoint(payload)
         elif opcode == "migrate":
@@ -175,13 +181,13 @@ class RequestRouter:
         elif opcode == "restore":
             return self.restore(payload)
         elif opcode == "ContainerStat":
-            return self.getContainersStat()
+            return self.get_containers_stat()
         elif opcode == "hostDetailsVirtual":
-            return self.hostDetailsVirtual()
+            return self.host_details_virtual()
         elif opcode == "hostDetailsPhysical":
-            return self.hostDetailsPhysical()
+            return self.host_details_physical()
         elif opcode == "hostStat":
-            return self.gethostStat()
+            return self.get_host_stat()
         else:
             return codes.BAD_REQ, ""
 
@@ -194,7 +200,7 @@ class RequestRouter:
         try:
             cid = subprocess.run("docker inspect -f '{{.Id}}' " + container_name, shell=True, stdout=subprocess.PIPE)
             cid = cid.stdout.decode('utf-8').strip()
-            running = self.containerClient.dclient1.inspect_container(cid)['State']['Running']
+            running = self.container_client.dclient1.inspect_container(cid)['State']['Running']
             logging.debug('Inside checkpoint function, checkpoint is running = ' + str(running))
             if running:
                 subprocess.call(["sudo", "docker", "checkpoint", "create", container_name, checkpoint_name])
@@ -217,7 +223,7 @@ class RequestRouter:
             if running:
                 cmd = "sudo tar -zcf /tmp/" + container_name + "." + checkpoint_name + ".tgz -C /var/lib/docker/containers/" + cid + "/" + "checkpoints/ " + checkpoint_name + "/"
                 subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, universal_newlines=True)
-                self.containerClient.delete(container_name)
+                self.container_client.delete(container_name)
                 subprocess.call(["scp", "-o", "StrictHostKeyChecking=no", "-i", "~/agent/id_rsa",
                                  "/tmp/" + container_name + "." + checkpoint_name + ".tgz",
                                  uname + "@" + targetIP + ":/tmp/"])

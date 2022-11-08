@@ -27,7 +27,7 @@ class RequestHandler:
             "host_ip": hostIP,
             "name": json_body["fields"]["name"]
         }
-        rc = rclient.HandleRequest(payload, hostIP, self.env)
+        rc = rclient.handle_request(payload, hostIP, self.env)
         self.env.logger.debug(payload)
         self.env.logger.debug("Response from " + opcode + "d container", rc)
         return rc, time() - start
@@ -38,9 +38,9 @@ class RequestHandler:
     def destroy(self, json_body, hostIP):
         return self.basic_call(json_body, "delete", hostIP)
 
-    def gethostStat(self, hostIP):
+    def get_host_stat(self, hostIP):
         message = "Host stats collected successfully"
-        data = rclient.HandleRequest({"opcode": "hostStat"}, hostIP, self.env)
+        data = rclient.handle_request({"opcode": "hostStat"}, hostIP, self.env)
         datapoint = {
             "measurement": "hostStat",
             "tags": {
@@ -58,9 +58,9 @@ class RequestHandler:
         if 'server_error' not in data: self.db.insert([datapoint])
         return datapoint, message
 
-    def getContainerStat(self, hostIP):
+    def get_container_stat(self, hostIP):
         message = "Container stats collected successfully"
-        data = rclient.HandleRequest({"opcode": "ContainerStat"}, hostIP, self.env)
+        data = rclient.handle_request({"opcode": "ContainerStat"}, hostIP, self.env)
         datapoints = []
         if 'server_error' not in data:
             for container_dict in data['stats']:
@@ -85,7 +85,7 @@ class RequestHandler:
             "c_name": str(ccid) + "_" + str(cid),
             "name": str(ccid) + "_" + str(cid)
         }
-        rc = rclient.HandleRequest(payload, cur_host_ip, self.env)
+        rc = rclient.handle_request(payload, cur_host_ip, self.env)
         self.env.logger.debug(
             "checkpoint completed, response is container:" + str(ccid) + "_" + str(cid) + ", host:" + cur_host_ip)
         self.env.logger.debug(payload)
@@ -101,7 +101,7 @@ class RequestHandler:
             "name": str(ccid) + "_" + str(cid),
             "targetIP": tar_host_ip
         }
-        rc = rclient.HandleRequest(payload, cur_host_ip, self.env)
+        rc = rclient.handle_request(payload, cur_host_ip, self.env)
         self.env.logger.debug(
             "Migrated from " + cur_host_ip + " to " + tar_host_ip + " for container: " + str(ccid) + "_" + str(cid))
         self.env.logger.debug(payload)
@@ -116,7 +116,7 @@ class RequestHandler:
             "name": name,
             "image": image
         }
-        rc = rclient.HandleRequest(payload, tar_host_ip, self.env)
+        rc = rclient.handle_request(payload, tar_host_ip, self.env)
         self.env.logger.debug("Restore container " + str(ccid) + "_" + str(cid) + " at " + tar_host_ip)
         self.env.logger.debug(payload)
         return rc, time() - start
